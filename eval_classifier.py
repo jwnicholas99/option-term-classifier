@@ -8,23 +8,26 @@ from classifiers.OneClassSVM import OneClassSVMClassifier
 from feature_extractors.RawImage import RawImage
 from utils.monte_preprocessing import parse_ram
 
-def load_trajectories(path):
+def load_trajectories(path, skip=0):
     '''
     Returns a generator for getting states.
 
     Args:
         path (str): filepath of pkl file containing trajectories
+        skip (int): number of trajectories to skip
 
     Returns:
         (generator): generator to be called for trajectories
     '''
     print(f"[+] Loading trajectories from file '{path}'")
     with gzip.open(path, 'rb') as f:
+        for _ in range(skip):
+            traj = pickle.load(f)
+
         try:
             while True:
-                trajs = pickle.load(f)
-                print(trajs)
-                yield from (traj for traj in tqdm(trajs))
+                traj = pickle.load(f)
+                yield traj
         except EOFError:
             pass
 
@@ -39,9 +42,13 @@ def parse_trajectories(trajs):
         (List of lists of MonteRAMState, List of lists of frames)
     '''
     ram_trajs, frame_trajs = [], []
-    for rams, frames in trajs:
-        ram_trajs.append([parse_ram(ram) for ram in rams])
-        frame_trajs.append(frames)
+    for traj in trajs:
+        ram_traj, frame_traj = [], []
+        for ram, frame in traj:
+            ram_traj.append(parse_ram(ram))
+            frame_traj.append(frame)
+        ram_trajs.append(ram_traj)
+        frame_trajs.append(frame_traj)
     return ram_trajs, frame_trajs
 
 def filter_in_term_set(trajs, subgoal):
@@ -79,7 +86,6 @@ if __name__=='__main__':
 
     trajs_generator = load_trajectories(args.filepath)
     ram_trajs, frame_trajs = parse_trajectories(trajs_generator)
-    print(frame_trajs)
 
     traj_idx = 1300
     state_idx = 213

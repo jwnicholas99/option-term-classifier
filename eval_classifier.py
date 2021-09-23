@@ -92,14 +92,14 @@ if __name__=='__main__':
     window_sz = 5
 
     subgoal_ram = ram_trajs[traj_idx][state_idx]
-    term_set = filter_in_term_set(ram_trajs, subgoal_ram)
+    ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
 
     if args.feature_extractor == 'RawImage':
         feature_extractor = RawImage()
 
-    frame_term_set = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
+    term_set_frames = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
     if args.term_classifier == 'OneClassSVM':
-        term_classifier = OneClassSVMClassifier(frame_term_set, feature_extractor)
+        term_classifier = OneClassSVMClassifier(term_set_frames, feature_extractor)
 
     output = set()
     for traj_idx in range(len(frame_trajs)):
@@ -107,4 +107,4 @@ if __name__=='__main__':
             if term_classifier.is_term(np.array(frame_trajs[traj_idx][state_idx])):
                 output.add((traj_idx, state_idx))
 
-    print(len(term_set.intersection(output)))
+    print(len(ground_truth_idxs.intersection(output)))

@@ -18,5 +18,5 @@ class OneClassSVMClassifier():
 
     def is_term(self, state):
         state = np.reshape(state, (4,84,84))
-        features = self.feature_extractor.extract_features(state)
+        features = self.feature_extractor.extract_features([state])
         return self.term_classifier.predict(features)[0] == 1

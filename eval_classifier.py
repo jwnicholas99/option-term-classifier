@@ -2,10 +2,12 @@ import argparse
 import gzip
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from classifiers.OneClassSVM import OneClassSVMClassifier
 from feature_extractors.RawImage import RawImage
+from feature_extractors.DownsampleImage import DownsampleImage
 from utils.monte_preprocessing import parse_ram
 
 def load_trajectories(path, skip=0):
@@ -21,7 +23,8 @@ def load_trajectories(path, skip=0):
     '''
     print(f"[+] Loading trajectories from file '{path}'")
     with gzip.open(path, 'rb') as f:
-        for _ in range(skip):
+        print(f"[+] Skipping {skip} trajectories...")
+        for _ in tqdm(range(skip)):
             traj = pickle.load(f)
 
         try:
@@ -31,7 +34,7 @@ def load_trajectories(path, skip=0):
         except EOFError:
             pass
 
-def parse_trajectories(trajs):
+def parse_trajectories(trajs, start, end):
     '''
     Parse and separate trajectories into ram trajectories and frame trajectories
 
@@ -42,7 +45,12 @@ def parse_trajectories(trajs):
         (List of lists of MonteRAMState, List of lists of frames)
     '''
     ram_trajs, frame_trajs = [], []
-    for traj in trajs:
+    for i, traj in enumerate(trajs):
+        if i < start:
+            continue
+        if i > end:
+            break
+
         ram_traj, frame_traj = [], []
         for ram, frame in traj:
             ram_traj.append(parse_ram(ram))
@@ -50,6 +58,12 @@ def parse_trajectories(trajs):
         ram_trajs.append(ram_traj)
         frame_trajs.append(frame_traj)
     return ram_trajs, frame_trajs
+
+def find_first_instance(trajs, subgoal):
+    for i, traj in enumerate(trajs):
+        for j, state in enumerate (traj):
+            if state.player_x == subgoal[0] and state.player_y == subgoal[1]:
+                return i, j
 
 def filter_in_term_set(trajs, subgoal):
     '''
@@ -61,18 +75,17 @@ def filter_in_term_set(trajs, subgoal):
         subgoal (MonteRAMState): the ram state chosen to be subgoal
 
     Returns:
-        (set of (int, int)): set of indices in the termination set of the subgoal
+        (list of (int, int)): list of indices in the termination set of the subgoal
     '''
-    term_set = set()
-    for traj_idx in range(len(trajs)):
-        for state_idx in range(len(trajs[traj_idx])):
-            state = trajs[traj_idx][state_idx]
+    term_set = []
+    for i, traj in enumerate(trajs):
+        for j, state in enumerate(trajs[traj_idx]):
             if (
                 abs(state.player_x - subgoal.player_x) <= 1 and
                 abs(state.player_y - subgoal.player_y) <= 1 and
                 state.has_key == subgoal.has_key
             ):
-                term_set.add((traj_idx, state_idx))
+                term_set.append((i, j))
     return term_set
 
 if __name__=='__main__':
@@ -80,22 +93,34 @@ if __name__=='__main__':
 
     parser.add_argument('filepath', type=str, help='filepath of pkl file containing trajectories with RAM states and frames')
     parser.add_argument('term_classifier', type=str, choices=['OneClassSVM'], help='termination classifier to be used')
-    parser.add_argument('feature_extractor', type=str, choices=['RawImage'], help='feature extractor to be used')
+    parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage'], help='feature extractor to be used')
 
     args = parser.parse_args()
 
-    trajs_generator = load_trajectories(args.filepath)
-    ram_trajs, frame_trajs = parse_trajectories(trajs_generator)
+    trajs_generator = load_trajectories(args.filepath, skip=0)
+    ram_trajs, frame_trajs = parse_trajectories(trajs_generator, start=500, end=550)
 
-    traj_idx = 1300
-    state_idx = 213
+    # (player_x, player_y) of good subgoals
+    # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
+    #  top of ladder of left plat, key, door]
+    subgoals = [(133, 192), (132, 148), (20, 148), (20, 192), (13, 198), (21, 235)]
+    subgoal = subgoals[0]
+
+    traj_idx, state_idx = find_first_instance(ram_trajs, subgoal)
     window_sz = 5
 
     subgoal_ram = ram_trajs[traj_idx][state_idx]
     ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
+    ground_truth = ground_truth_idxs[1]
+    frame = frame_trajs[ground_truth[0]][ground_truth[1]]
 
     if args.feature_extractor == 'RawImage':
         feature_extractor = RawImage()
+    elif args.feature_extractor == 'DownsampleImage':
+        feature_extractor = DownsampleImage()
+
+    frame = feature_extractor.extract_features([frame])
+    plt.imsave('downsampled.jpg', frame[0][0])
 
     term_set_frames = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
     if args.term_classifier == 'OneClassSVM':

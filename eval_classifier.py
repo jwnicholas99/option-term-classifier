@@ -98,7 +98,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     trajs_generator = load_trajectories(args.filepath, skip=0)
-    ram_trajs, frame_trajs = parse_trajectories(trajs_generator, start=500, end=550)
+    ram_trajs, frame_trajs = parse_trajectories(trajs_generator, start=500, end=700)
 
     # (player_x, player_y) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
@@ -111,25 +111,25 @@ if __name__=='__main__':
 
     subgoal_ram = ram_trajs[traj_idx][state_idx]
     ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
-    ground_truth = ground_truth_idxs[1]
-    frame = frame_trajs[ground_truth[0]][ground_truth[1]]
 
     if args.feature_extractor == 'RawImage':
         feature_extractor = RawImage()
     elif args.feature_extractor == 'DownsampleImage':
         feature_extractor = DownsampleImage()
 
-    frame = feature_extractor.extract_features([frame])
-    plt.imsave('downsampled.jpg', frame[0][0])
-
     term_set_frames = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
     if args.term_classifier == 'OneClassSVM':
         term_classifier = OneClassSVMClassifier(term_set_frames, feature_extractor)
 
     output = set()
-    for traj_idx in range(len(frame_trajs)):
-        for state_idx in range(len(frame_trajs[traj_idx])):
-            if term_classifier.is_term(np.array(frame_trajs[traj_idx][state_idx])):
-                output.add((traj_idx, state_idx))
+    for i, frame_traj in enumerate(frame_trajs):
+        for j, state in enumerate(frame_traj):
+            if term_classifier.is_term(state):
+                output.add((i, j))
 
-    print(len(ground_truth_idxs.intersection(output)))
+    ground_truth_idxs_set = set(ground_truth_idxs)
+    true_pos = len(ground_truth_idxs_set.intersection(output))
+    false_pos = len(output) - true_pos
+    print(f"Number of states in term set: {len(ground_truth_idxs_set)}")
+    print(f"Number of true positives: {true_pos}")
+    print(f"Number of false positives: {false_pos}")

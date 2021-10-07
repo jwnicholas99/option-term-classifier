@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.svm import OneClassSVM
+from .classifier import Classifier
 
 class OneClassSVMClassifier():
     def __init__(self, term_set, feature_extractor):

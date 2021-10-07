@@ -17,6 +17,5 @@ class OneClassSVMClassifier():
         return (np.array([np.reshape(state_features, (-1,)) for state_features in states_features]))
 
     def is_term(self, state):
-        state = np.reshape(state, (1,84,84))
         features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
         return self.term_classifier.predict(features)[0] == 1

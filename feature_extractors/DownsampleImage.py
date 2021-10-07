@@ -1,6 +1,5 @@
 import numpy as np
-
-from skimage.measure import block_reduce
+import cv2
 
 class DownsampleImage():
     def extract_features(self, states):
@@ -15,7 +14,7 @@ class DownsampleImage():
         '''
         output = []
         for state in states:
-            downsampled = block_reduce(state, block_size=(1, 2, 2), func=np.mean)
+            downsampled = cv2.resize(state, (52, 52), interpolation=cv2.INTER_LINEAR)
             output.append(downsampled)
 
         return output

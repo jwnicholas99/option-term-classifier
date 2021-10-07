@@ -6,8 +6,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from classifiers.OneClassSVM import OneClassSVMClassifier
+
 from feature_extractors.RawImage import RawImage
 from feature_extractors.DownsampleImage import DownsampleImage
+from feature_extractors.RawRAM import RawRAM
+from feature_extractors.MonteRAMState import MonteRAMState
+
 from utils.monte_preprocessing import parse_ram
 
 def load_trajectories(path, skip=0):
@@ -42,22 +46,24 @@ def parse_trajectories(trajs, start, end):
         trajs (generator): trajectories containing ram and frame states
 
     Returns:
-        (List of lists of MonteRAMState, List of lists of frames)
+        (List of lists of raw RAM, List of lists of MonteRAMState, List of lists of frames)
     '''
-    ram_trajs, frame_trajs = [], []
+    raw_ram_trajs, ram_trajs, frame_trajs = [], [], []
     for i, traj in enumerate(trajs):
         if i < start:
             continue
         if i > end:
             break
 
-        ram_traj, frame_traj = [], []
+        raw_ram_traj, ram_traj, frame_traj = [], [], []
         for ram, frame in traj:
+            raw_ram_traj.append(ram)
             ram_traj.append(parse_ram(ram))
             frame_traj.append(frame)
+        raw_ram_trajs.append(raw_ram_traj)
         ram_trajs.append(ram_traj)
         frame_trajs.append(frame_traj)
-    return ram_trajs, frame_trajs
+    return raw_ram_trajs, ram_trajs, frame_trajs
 
 def find_first_instance(trajs, subgoal):
     for i, traj in enumerate(trajs):
@@ -93,12 +99,12 @@ if __name__=='__main__':
 
     parser.add_argument('filepath', type=str, help='filepath of pkl file containing trajectories with RAM states and frames')
     parser.add_argument('term_classifier', type=str, choices=['OneClassSVM'], help='termination classifier to be used')
-    parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage'], help='feature extractor to be used')
+    parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState'], help='feature extractor to be used')
 
     args = parser.parse_args()
 
     trajs_generator = load_trajectories(args.filepath, skip=0)
-    ram_trajs, frame_trajs = parse_trajectories(trajs_generator, start=500, end=700)
+    raw_ram_trajs, ram_trajs, frame_trajs = parse_trajectories(trajs_generator, start=500, end=520)
 
     # (player_x, player_y) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
@@ -111,19 +117,32 @@ if __name__=='__main__':
 
     subgoal_ram = ram_trajs[traj_idx][state_idx]
     ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
-
+    
+    # Set-up feature extractor
     if args.feature_extractor == 'RawImage':
         feature_extractor = RawImage()
     elif args.feature_extractor == 'DownsampleImage':
         feature_extractor = DownsampleImage()
+    elif args.feature_extractor == 'RawRAM':
+        feature_extractor = RawRAM()
+    elif args.feature_extractor == 'MonteRAMState':
+        feature_extractor = MonteRAMState()
 
-    term_set_frames = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
+    if args.feature_extractor == 'RawImage' or args.feature_extractor == 'DownsampleImage':
+        term_set = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
+        trajs = frame_trajs
+    elif args.feature_extractor == 'RawRAM' or args.feature_extractor == 'MonteRAMState':
+        term_set = raw_ram_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
+        trajs = raw_ram_trajs
+
+    # Set-up classifier
     if args.term_classifier == 'OneClassSVM':
-        term_classifier = OneClassSVMClassifier(term_set_frames, feature_extractor)
+        term_classifier = OneClassSVMClassifier(term_set, feature_extractor)
 
+    # Evaluate classifier
     output = set()
-    for i, frame_traj in enumerate(frame_trajs):
-        for j, state in enumerate(frame_traj):
+    for i, traj in enumerate(trajs):
+        for j, state in enumerate(traj):
             if term_classifier.is_term(state):
                 output.add((i, j))
 

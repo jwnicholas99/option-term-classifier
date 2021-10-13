@@ -1,6 +1,7 @@
 from utils.monte_preprocessing import parse_ram
+from .feature_extractor import FeatureExtractor
 
-class MonteRAMState():
+class MonteRAMState(FeatureExtractor):
     def extract_features(self, states):
         '''
         Extract MonteRAMState from raw RAM

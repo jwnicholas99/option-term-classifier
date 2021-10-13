@@ -1,13 +1,6 @@
 class LabelExtractor:
-    def __init__(self, extract_only_positive) -> None:
+    def __init__(self, extract_only_pos):
         pass
 
-    def __call__(self, state_trajectory):
-        positive_states = []
-        positive_indices = []
-
-        negative_states = []
-        negative_indices = []
-
-        return positive_states, positive_indices, \
-               negative_states, negative_indices
+    def extract_labels(self, state_traj):
+        raise NotImplementedError

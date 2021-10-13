@@ -12,6 +12,11 @@ from feature_extractors.DownsampleImage import DownsampleImage
 from feature_extractors.RawRAM import RawRAM
 from feature_extractors.MonteRAMState import MonteRAMState
 
+from label_extractors.OracleExtractor import OracleExtractor
+from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
+from label_extractors.AfterExtractor import AfterExtractor
+from label_extractors.labeling_funcs import square_epsilon
+
 from utils.monte_preprocessing import parse_ram
 
 def load_trajectories(path, skip=0):
@@ -86,11 +91,7 @@ def filter_in_term_set(trajs, subgoal):
     term_set = []
     for i, traj in enumerate(trajs):
         for j, state in enumerate(trajs[traj_idx]):
-            if (
-                abs(state.player_x - subgoal.player_x) <= 1 and
-                abs(state.player_y - subgoal.player_y) <= 1 and
-                state.has_key == subgoal.has_key
-            ):
+            if square_epsilon(subgoal, state):
                 term_set.append((i, j))
     return term_set
 
@@ -100,6 +101,8 @@ if __name__=='__main__':
     parser.add_argument('filepath', type=str, help='filepath of pkl file containing trajectories with RAM states and frames')
     parser.add_argument('term_classifier', type=str, choices=['OneClassSVM'], help='termination classifier to be used')
     parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState'], help='feature extractor to be used')
+    parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor'], help='label extractor to be used')
+    parser.add_argument('extract_only_pos', type=bool, help='whether label extractor should only extract positive egs')
 
     args = parser.parse_args()
 
@@ -128,22 +131,35 @@ if __name__=='__main__':
     elif args.feature_extractor == 'MonteRAMState':
         feature_extractor = MonteRAMState()
 
+    # Extract positive and negative labels
+    if args.label_extractor == 'BeforeAfterExtractor':
+        label_extractor = BeforeAfterExtractor(args.extract_only_pos, window_sz)
+    elif args.label_extractor == 'AfterExtractor':
+        label_extractor = AfterExtractor(args.extract_only_pos, window_sz)
+    elif args.label_extractor == 'OracleExtractor':
+        label_extractor = OracleExtractor(square_epsilon, args.extract_only_pos)
+
     if args.feature_extractor == 'RawImage' or args.feature_extractor == 'DownsampleImage':
-        term_set = frame_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
+        subgoal_traj = frame_trajs[traj_idx]
         trajs = frame_trajs
     elif args.feature_extractor == 'RawRAM' or args.feature_extractor == 'MonteRAMState':
-        term_set = raw_ram_trajs[traj_idx][state_idx - window_sz: state_idx + window_sz]
+        subgoal_traj = raw_ram_trajs[traj_idx]
         trajs = raw_ram_trajs
 
+    pos_states, pos_idxs, neg_states, neg_idxs = label_extractor.extract_labels(subgoal_traj, state_idx)
+
     # Set-up classifier
+    train_data = pos_states + neg_states
+    labels = [True for _ in range(len(pos_states))] + [False for _ in range(len(neg_states))]
     if args.term_classifier == 'OneClassSVM':
-        term_classifier = OneClassSVMClassifier(term_set, feature_extractor)
+        term_classifier = OneClassSVMClassifier(feature_extractor)
+        term_classifier.train(train_data, labels)
 
     # Evaluate classifier
     output = set()
     for i, traj in enumerate(trajs):
         for j, state in enumerate(traj):
-            if term_classifier.is_term(state):
+            if term_classifier.predict(state):
                 output.add((i, j))
 
     ground_truth_idxs_set = set(ground_truth_idxs)

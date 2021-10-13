@@ -1,7 +1,9 @@
 import numpy as np
 import cv2
 
-class DownsampleImage():
+from .feature_extractor import FeatureExtractor
+
+class DownsampleImage(FeatureExtractor):
     def extract_features(self, states):
         '''
         Returns image state after downsampling
@@ -14,7 +16,7 @@ class DownsampleImage():
         '''
         output = []
         for state in states:
-            downsampled = cv2.resize(state, (52, 52), interpolation=cv2.INTER_LINEAR)
+            downsampled = cv2.resize(state, (20, 20), interpolation=cv2.INTER_AREA)
             output.append(downsampled)
 
         return output

@@ -1,4 +1,6 @@
-class RawImage():
+from .feature_extractor import FeatureExtractor
+
+class RawImage(FeatureExtractor):
     def extract_features(self, states):
         '''
         Returns image state without extracting feautures

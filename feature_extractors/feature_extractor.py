@@ -1,6 +1,6 @@
 class FeatureExtractor:
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
-    def __call__(self, state):
-        pass
+    def extract_features(self, states):
+        raise NotImplementedError

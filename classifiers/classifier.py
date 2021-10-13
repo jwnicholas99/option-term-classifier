@@ -1,10 +1,9 @@
 class Classifier:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, term_set, feature_extractor):
+        raise NotImplementedError
 
-    def train(self, X, y):
-        pass
+    def train(self, X, Y):
+        raise NotImplementedError
 
-    def predict(X):
-        pass
-    
+    def predict(self, state):
+        raise NotImplementedError

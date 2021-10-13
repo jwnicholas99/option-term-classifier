@@ -1,4 +1,6 @@
-class RawRAM():
+from .feature_extractor import FeatureExtractor
+
+class RawRAM(FeatureExtractor):
     def extract_features(self, states):
         '''
         Returns RAM state without extracting feautures

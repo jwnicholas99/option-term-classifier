@@ -11,4 +11,4 @@ def square_epsilon(subgoal, state):
         (bool): whether state is in the term set of subgoal
     '''
 
-    return abs(state.player_x - subgoal.player_x) <= 1 and abs(state.player_y - subgoal.player_y) <= 1
+    return abs(state.player_x - subgoal.player_x) <= 5 and abs(state.player_y - subgoal.player_y) <= 5

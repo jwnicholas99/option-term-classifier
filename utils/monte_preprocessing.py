@@ -32,6 +32,17 @@ def parse_ram(ram: np.ndarray) -> MonteRAMState:
 
     return MonteRAMState(x, y, has_key, door_left_locked, door_right_locked, skull_x, lives)
 
+def parse_ram_xy(ram: np.ndarray) -> MonteRAMState:
+    """Get the current annotated Montezuma RAM state as a tuple
+
+    See RAM annotations:
+    https://docs.google.com/spreadsheets/d/1KU4KcPqUuhSZJ1N2IyhPW59yxsc4mI4oSiHDWA3HCK4
+    """
+    x = get_byte(ram, 0xaa)
+    y = get_byte(ram, 0xab)
+
+    return x, y
+
 def discretize_state(state: MonteRAMState, discretize_factor: int) -> MonteRAMState:
     x, y, has_key, door_left_locked, door_right_locked, skull_x, lives = state
     x //= discretize_factor

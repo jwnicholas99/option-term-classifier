@@ -22,7 +22,7 @@ from label_extractors.TransductiveExtractor import TransductiveExtractor
 from label_extractors.labeling_funcs import square_epsilon
 
 from utils.monte_preprocessing import parse_ram, parse_ram_xy
-from utils.plotting import plot_OneClassSVM, plot_TwoClassSVM
+from utils.plotting import plot_SVM
 from utils.statistics import calc_statistics
 
 def load_trajectories(path, skip=0):
@@ -127,11 +127,10 @@ if __name__=='__main__':
                 print(f"[+] Running with window_sz={window_sz}, nu={nu}, gamma={gamma}")
 
                 traj_idx, state_idx = find_first_instance(ram_trajs, subgoal)
-                #window_sz = 3
 
                 subgoal_ram = ram_trajs[traj_idx][state_idx]
                 ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
-                
+
                 # Set-up feature extractor
                 if args.feature_extractor == 'RawImage':
                     feature_extractor = RawImage()
@@ -180,10 +179,18 @@ if __name__=='__main__':
                         if term_classifier.predict(state):
                             output.add((i, j))
 
-                #plot_OneClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png")
-                #plot_OneClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_nu={nu}_gamma={gamma}.png")
-                #plot_TwoClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_windowsz={window_sz}_gamma={gamma}.png")
+                # Plot trained classifier
+                all_states = np.array([state for traj in trajs for state in traj])
+                ram_xy_states = np.array([parse_ram_xy(state) for traj in raw_ram_trajs for state in traj])
+                is_xy = args.feature_extractor == 'MonteRAMXY'
 
+                if args.term_classifier == 'OneClassSVM':
+                    file_path = f"plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
+                elif args.term_classifier == 'TwoClassSVM':
+                    file_path = f"plots/all_states_windowsz={window_sz}_gamma={gamma}.png"
+                plot_SVM(term_classifier, ram_xy_states, all_states, is_xy, file_path)
+
+                # Calculate and save statistics
                 ground_truth_idxs_set = set(ground_truth_idxs)
                 true_pos = len(ground_truth_idxs_set.intersection(output))
                 false_pos = len(output) - true_pos
@@ -196,7 +203,7 @@ if __name__=='__main__':
                 print(f"Recall: {recall}")
                 print(f"F1: {f1}")
 
-                with open("results.csv", "a") as f:
+                with open("Oracle_results.csv", "a") as f:
                     writer = csv.writer(f)
                     writer.writerow([window_sz, nu, gamma, true_pos, false_pos, precision, recall, f1])
                     #writer.writerow([window_sz, gamma, true_pos, false_pos, precision, recall, f1])

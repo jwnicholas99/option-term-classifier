@@ -3,56 +3,37 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import csv
 
-def plot_OneClassSVM(classifier, states, filepath):
+def plot_SVM(classifier, ram_xy_states, states, is_xy, filepath):
    # extract the model predictions
-   predicted = classifier.predict(states)
+   predicted = np.array([classifier.predict(state) for state in states])
 
    # define the meshgrid
-   x_min, x_max = states[:, 0].min() - 5, states[:, 0].max() + 5
-   y_min, y_max = states[:, 1].min() - 5, states[:, 1].max() + 5
+   x_min, x_max = ram_xy_states[:, 0].min() - 5, ram_xy_states[:, 0].max() + 5
+   y_min, y_max = ram_xy_states[:, 1].min() - 5, ram_xy_states[:, 1].max() + 5
 
    x_ = np.linspace(x_min, x_max, 500)
    y_ = np.linspace(y_min, y_max, 500)
 
    xx, yy = np.meshgrid(x_, y_)
 
-   # evaluate the decision function on the meshgrid
-   z = classifier.decision_function(np.c_[xx.ravel(), yy.ravel()])
-   z = z.reshape(xx.shape)
+   if is_xy:
+      # evaluate the decision function on the meshgrid
+      z = classifier.term_classifier.decision_function(np.c_[xx.ravel(), yy.ravel()])
+      z = z.reshape(xx.shape)
 
-   # plot the decision function and the reduced data
-   plt.contourf(xx, yy, z, cmap=plt.cm.PuBu)
-   a = plt.contour(xx, yy, z, levels=[0], linewidths=2, colors='darkred')
-   b = plt.scatter(states[predicted == 1, 0], states[predicted == 1, 1], c='white', edgecolors='k')
-   c = plt.scatter(states[predicted == -1, 0], states[predicted == -1, 1], c='gold', edgecolors='k')
-   plt.legend([a.collections[0], b, c], ['learned frontier', 'regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
-   plt.axis('tight')
-   plt.savefig(filepath)
-   plt.clf()
+      # plot the decision function
+      plt.contourf(xx, yy, z, cmap=plt.cm.PuBu)
+      a = plt.contour(xx, yy, z, levels=[0], linewidths=2, colors='darkred')
 
-def plot_TwoClassSVM(classifier, states, filepath):
-   # extract the model predictions
-   predicted = classifier.predict(states)
+   # plot predictions
+   c = plt.scatter(ram_xy_states[predicted == 0, 0], ram_xy_states[predicted == 0, 1], c='gold', edgecolors='k')
+   b = plt.scatter(ram_xy_states[predicted == 1, 0], ram_xy_states[predicted == 1, 1], c='red', edgecolors='k')
 
-   # define the meshgrid
-   x_min, x_max = states[:, 0].min() - 5, states[:, 0].max() + 5
-   y_min, y_max = states[:, 1].min() - 5, states[:, 1].max() + 5
+   if is_xy:
+      plt.legend([a.collections[0], b, c], ['learned frontier', 'regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
+   else:
+      plt.legend([b, c], ['regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
 
-   x_ = np.linspace(x_min, x_max, 500)
-   y_ = np.linspace(y_min, y_max, 500)
-
-   xx, yy = np.meshgrid(x_, y_)
-
-   # evaluate the decision function on the meshgrid
-   z = classifier.decision_function(np.c_[xx.ravel(), yy.ravel()])
-   z = z.reshape(xx.shape)
-
-   # plot the decision function and the reduced data
-   plt.contourf(xx, yy, z, cmap=plt.cm.PuBu)
-   a = plt.contour(xx, yy, z, levels=[0], linewidths=2, colors='darkred')
-   b = plt.scatter(states[predicted == 1, 0], states[predicted == 1, 1], c='white', edgecolors='k')
-   c = plt.scatter(states[predicted == 0, 0], states[predicted == 0, 1], c='gold', edgecolors='k')
-   plt.legend([a.collections[0], b, c], ['learned frontier', 'regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
    plt.axis('tight')
    plt.savefig(filepath)
    plt.clf()

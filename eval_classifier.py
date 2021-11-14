@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from classifiers.OneClassSVM import OneClassSVMClassifier
+from classifiers.TwoClassSVM import TwoClassSVMClassifier
 
 from feature_extractors.RawImage import RawImage
 from feature_extractors.DownsampleImage import DownsampleImage
@@ -20,7 +21,8 @@ from label_extractors.AfterExtractor import AfterExtractor
 from label_extractors.labeling_funcs import square_epsilon
 
 from utils.monte_preprocessing import parse_ram, parse_ram_xy
-from utils.plotting import plot_OneClassSVM
+from utils.plotting import plot_OneClassSVM, plot_TwoClassSVM
+from utils.statistics import calc_statistics
 
 def load_trajectories(path, skip=0):
     '''
@@ -102,10 +104,10 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Evaluate termination classifier performance')
 
     parser.add_argument('filepath', type=str, help='filepath of pkl file containing trajectories with RAM states and frames')
-    parser.add_argument('term_classifier', type=str, choices=['OneClassSVM'], help='termination classifier to be used')
+    parser.add_argument('term_classifier', type=str, choices=['OneClassSVM', 'TwoClassSVM'], help='termination classifier to be used')
     parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState', 'MonteRAMXY'], help='feature extractor to be used')
-    parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor'], help='label extractor to be used')
-    parser.add_argument('extract_only_pos', type=bool, help='whether label extractor should only extract positive egs')
+    parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor', 'TransductiveExtractor'], help='label extractor to be used')
+    parser.add_argument('--extract_only_pos', default=False, action='store_true', help='whether label extractor should only extract positive egs')
 
     args = parser.parse_args()
 
@@ -156,18 +158,17 @@ if __name__=='__main__':
                     subgoal_traj = raw_ram_trajs[traj_idx]
                     trajs = raw_ram_trajs
 
-                # These commented out lines are for extracting labels for the OracleExtractor, where it is possible to have multiple trajs
-                #pos_states, pos_idxs, neg_states, neg_idxs = label_extractor.extract_labels([state for traj in trajs for state in traj], subgoal_traj[state_idx])
-                #pos_states, pos_idxs, neg_states, neg_idxs = label_extractor.extract_labels([state for traj in trajs[traj_idx:traj_idx+10] for state in traj], subgoal_traj[state_idx])
-                #pos_states, pos_idxs, neg_states, neg_idxs = label_extractor.extract_labels(subgoal_traj, subgoal_traj[state_idx])
-                pos_states, pos_idxs, neg_states, neg_idxs = label_extractor.extract_labels(subgoal_traj, state_idx)
+                pos_states, neg_states = label_extractor.extract_labels(trajs, traj_idx, state_idx)
 
                 # Set-up classifier
                 train_data = pos_states + neg_states
                 labels = [True for _ in range(len(pos_states))] + [False for _ in range(len(neg_states))]
+                
                 if args.term_classifier == 'OneClassSVM':
                     term_classifier = OneClassSVMClassifier(feature_extractor, window_sz=window_sz, nu=nu, gamma=gamma)
-                    term_classifier.train(train_data, labels)
+                elif args.term_classifier == 'TwoClassSVM':
+                    term_classifier = TwoClassSVMClassifier(feature_extractor, window_sz=window_sz, gamma=gamma)
+                term_classifier.train(train_data, labels)
 
                 # Evaluate classifier
                 output = set()
@@ -176,15 +177,25 @@ if __name__=='__main__':
                         if term_classifier.predict(state):
                             output.add((i, j))
 
-                plot_OneClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png")
+                #plot_OneClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png")
+                #plot_OneClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_nu={nu}_gamma={gamma}.png")
+                #plot_TwoClassSVM(term_classifier.term_classifier, np.array([parse_ram_xy(state) for traj in trajs for state in traj]), f"plots/all_states_windowsz={window_sz}_gamma={gamma}.png")
 
                 ground_truth_idxs_set = set(ground_truth_idxs)
                 true_pos = len(ground_truth_idxs_set.intersection(output))
                 false_pos = len(output) - true_pos
+                precision, recall, f1 = calc_statistics(true_pos, false_pos, len(ground_truth_idxs_set))
+                
                 print(f"Number of states in term set: {len(ground_truth_idxs_set)}")
                 print(f"Number of true positives: {true_pos}")
                 print(f"Number of false positives: {false_pos}")
+                print(f"Precision: {precision}")
+                print(f"Recall: {recall}")
+                print(f"F1: {f1}")
 
                 with open("results.csv", "a") as f:
                     writer = csv.writer(f)
-                    writer.writerow([window_sz, nu, gamma, true_pos, false_pos])
+                    writer.writerow([window_sz, nu, gamma, true_pos, false_pos, precision, recall, f1])
+                    #writer.writerow([window_sz, gamma, true_pos, false_pos, precision, recall, f1])
+                    #writer.writerow([nu, gamma, true_pos, false_pos, precision, recall, f1])
+                    #writer.writerow([gamma, true_pos, false_pos, precision, recall, f1])

@@ -15,28 +15,26 @@ class OracleExtractor(LabelExtractor):
         self.extract_only_pos = extract_only_pos
         self.labeling_func = labeling_func
 
-    def extract_labels(self, state_traj, subgoal):
+    def extract_labels(self, state_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
         Extract labels from a given raw ram state trajectory and the idx of the subgoal
 
         Args:
-            state_traj (list(np.array)): state trajectory - must be Raw ram state
-            idx (int): index of chosen subgoal
+            state_traj (list (list(np.array))): state trajectories - must be Raw ram state
+            subgoal_traj_idx (int): index of traj containing the subgoal
+            subgoal_state_idx (int): index of chosen subgoal
 
         Returns:
             (list(np.array)): list of np.array of positive states
-            (list(int)): list of indices of positive states
             (list(np.array)): list of np.array of negative states
-            (list(int)): list of indices of negative states
         '''
-        pos_states, pos_idxs, neg_states, neg_idxs = [], [], [], []
-        subgoal = parse_ram(subgoal)
+        pos_states, neg_states = [], []
 
-        for i, state in enumerate(state_traj):
+        subgoal_traj = state_trajs[subgoal_traj_idx]
+        subgoal = parse_ram(subgoal_traj[subgoal_state_idx])
+        for i, state in enumerate(subgoal_traj):
             if self.labeling_func(subgoal, parse_ram(state)):
                 pos_states.append(state)
-                pos_idxs.append(i)
             elif not self.extract_only_pos:
                 neg_states.append(state)
-                neg_idxs.append(i)
-        return pos_states, pos_idxs, neg_states, neg_idxs
+        return pos_states, neg_states

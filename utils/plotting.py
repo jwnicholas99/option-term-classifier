@@ -30,6 +30,32 @@ def plot_OneClassSVM(classifier, states, filepath):
    plt.savefig(filepath)
    plt.clf()
 
+def plot_TwoClassSVM(classifier, states, filepath):
+   # extract the model predictions
+   predicted = classifier.predict(states)
+
+   # define the meshgrid
+   x_min, x_max = states[:, 0].min() - 5, states[:, 0].max() + 5
+   y_min, y_max = states[:, 1].min() - 5, states[:, 1].max() + 5
+
+   x_ = np.linspace(x_min, x_max, 500)
+   y_ = np.linspace(y_min, y_max, 500)
+
+   xx, yy = np.meshgrid(x_, y_)
+
+   # evaluate the decision function on the meshgrid
+   z = classifier.decision_function(np.c_[xx.ravel(), yy.ravel()])
+   z = z.reshape(xx.shape)
+
+   # plot the decision function and the reduced data
+   plt.contourf(xx, yy, z, cmap=plt.cm.PuBu)
+   a = plt.contour(xx, yy, z, levels=[0], linewidths=2, colors='darkred')
+   b = plt.scatter(states[predicted == 1, 0], states[predicted == 1, 1], c='white', edgecolors='k')
+   c = plt.scatter(states[predicted == 0, 0], states[predicted == 0, 1], c='gold', edgecolors='k')
+   plt.legend([a.collections[0], b, c], ['learned frontier', 'regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
+   plt.axis('tight')
+   plt.savefig(filepath)
+   plt.clf()
 
 def plot_hyperparam_search(src_path, dest_path):
    with open(src_path) as f:

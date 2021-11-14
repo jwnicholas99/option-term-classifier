@@ -37,7 +37,7 @@ class OneClassSVMClassifier(Classifier):
         self.term_classifier = OneClassSVM(kernel='rbf', nu=self.nu, gamma=self.gamma)
         self.term_classifier.fit(positive_feature_matrix)
 
-        plot_OneClassSVM(self.term_classifier, positive_feature_matrix, f"plots/training_data_windowsz={self.window_sz}_nu={self.nu}_gamma={self.gamma}.png")
+        #plot_OneClassSVM(self.term_classifier, positive_feature_matrix, f"plots/training_data_windowsz={self.window_sz}_nu={self.nu}_gamma={self.gamma}.png")
 
     def __construct_feature_matrix(self, states_features):
         return (np.array([np.reshape(state_features, (-1,)) for state_features in states_features]))

@@ -18,6 +18,7 @@ from feature_extractors.MonteRAMXY import MonteRAMXY
 from label_extractors.OracleExtractor import OracleExtractor
 from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
 from label_extractors.AfterExtractor import AfterExtractor
+from label_extractors.TransductiveExtractor import TransductiveExtractor
 from label_extractors.labeling_funcs import square_epsilon
 
 from utils.monte_preprocessing import parse_ram, parse_ram_xy
@@ -150,6 +151,8 @@ if __name__=='__main__':
                     label_extractor = AfterExtractor(args.extract_only_pos, window_sz)
                 elif args.label_extractor == 'OracleExtractor':
                     label_extractor = OracleExtractor(square_epsilon, args.extract_only_pos)
+                elif args.label_extractor == 'TransductiveExtractor':
+                    label_extractor = TransductiveExtractor(args.extract_only_pos, window_sz)
 
                 if args.feature_extractor == 'RawImage' or args.feature_extractor == 'DownsampleImage':
                     subgoal_traj = frame_trajs[traj_idx]

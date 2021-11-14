@@ -37,7 +37,7 @@ class TwoClassSVMClassifier(Classifier):
         self.term_classifier = SVC(kernel='rbf', gamma=self.gamma, class_weight='balanced')
         self.term_classifier.fit(feature_matrix, self.Y)
 
-        #plot_TwoClassSVM(self.term_classifier, feature_matrix, f"plots/training_data_windowsz={self.window_sz}_gamma={self.gamma}.png")
+        plot_TwoClassSVM(self.term_classifier, feature_matrix, f"plots/training_data_windowsz={self.window_sz}_gamma={self.gamma}.png")
 
     def __construct_feature_matrix(self, states_features):
         return (np.array([np.reshape(state_features, (-1,)) for state_features in states_features]))

@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.svm import SVC
 
 from .classifier import Classifier
-from utils.plotting import plot_OneClassSVM, plot_TwoClassSVM
+from utils.plotting import plot_SVM
 
 class TwoClassSVMClassifier(Classifier):
     def __init__(self, feature_extractor, window_sz=1, gamma='scale'):
@@ -36,8 +36,6 @@ class TwoClassSVMClassifier(Classifier):
 
         self.term_classifier = SVC(kernel='rbf', gamma=self.gamma, class_weight='balanced')
         self.term_classifier.fit(feature_matrix, self.Y)
-
-        plot_TwoClassSVM(self.term_classifier, feature_matrix, f"plots/training_data_windowsz={self.window_sz}_gamma={self.gamma}.png")
 
     def __construct_feature_matrix(self, states_features):
         return (np.array([np.reshape(state_features, (-1,)) for state_features in states_features]))

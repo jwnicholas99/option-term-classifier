@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.svm import OneClassSVM
 
 from .classifier import Classifier
-from utils.plotting import plot_OneClassSVM
+from utils.plotting import plot_SVM
 
 class OneClassSVMClassifier(Classifier):
     def __init__(self, feature_extractor, window_sz=1, nu=0.1, gamma='scale'):
@@ -36,8 +36,6 @@ class OneClassSVMClassifier(Classifier):
         positive_feature_matrix = self.__construct_feature_matrix(states_features)
         self.term_classifier = OneClassSVM(kernel='rbf', nu=self.nu, gamma=self.gamma)
         self.term_classifier.fit(positive_feature_matrix)
-
-        #plot_OneClassSVM(self.term_classifier, positive_feature_matrix, f"plots/training_data_windowsz={self.window_sz}_nu={self.nu}_gamma={self.gamma}.png")
 
     def __construct_feature_matrix(self, states_features):
         return (np.array([np.reshape(state_features, (-1,)) for state_features in states_features]))

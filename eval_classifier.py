@@ -122,7 +122,9 @@ if __name__=='__main__':
     subgoal = subgoals[0]
 
     for window_sz in range(0, 7):
-        for nu in np.arange(0.1, 0.5, 0.1):
+    #for window_sz in range(0, 1):
+        #for nu in np.arange(0.1, 0.5, 0.1):
+        for nu in np.arange(0.1, 0.2, 0.1):
             for gamma in [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']:
                 print(f"[+] Running with window_sz={window_sz}, nu={nu}, gamma={gamma}")
 
@@ -160,12 +162,9 @@ if __name__=='__main__':
                     subgoal_traj = raw_ram_trajs[traj_idx]
                     trajs = raw_ram_trajs
 
-                pos_states, neg_states = label_extractor.extract_labels(trajs, traj_idx, state_idx)
+                train_data, labels = label_extractor.extract_labels(trajs, traj_idx, state_idx)
 
                 # Set-up classifier
-                train_data = pos_states + neg_states
-                labels = [True for _ in range(len(pos_states))] + [False for _ in range(len(neg_states))]
-                
                 if args.term_classifier == 'OneClassSVM':
                     term_classifier = OneClassSVMClassifier(feature_extractor, window_sz=window_sz, nu=nu, gamma=gamma)
                 elif args.term_classifier == 'TwoClassSVM':
@@ -185,9 +184,9 @@ if __name__=='__main__':
                 is_xy = args.feature_extractor == 'MonteRAMXY'
 
                 if args.term_classifier == 'OneClassSVM':
-                    file_path = f"plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
+                    file_path = f"{args.label_extractor}_plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
                 elif args.term_classifier == 'TwoClassSVM':
-                    file_path = f"plots/all_states_windowsz={window_sz}_gamma={gamma}.png"
+                    file_path = f"{args.label_extractor}_plots/all_states_windowsz={window_sz}_gamma={gamma}.png"
                 plot_SVM(term_classifier, ram_xy_states, all_states, is_xy, file_path)
 
                 # Calculate and save statistics
@@ -203,9 +202,15 @@ if __name__=='__main__':
                 print(f"Recall: {recall}")
                 print(f"F1: {f1}")
 
-                with open("Oracle_results.csv", "a") as f:
+                with open(f"{args.label_extractor}_results.csv", "a") as f:
                     writer = csv.writer(f)
-                    writer.writerow([window_sz, nu, gamma, true_pos, false_pos, precision, recall, f1])
-                    #writer.writerow([window_sz, gamma, true_pos, false_pos, precision, recall, f1])
-                    #writer.writerow([nu, gamma, true_pos, false_pos, precision, recall, f1])
-                    #writer.writerow([gamma, true_pos, false_pos, precision, recall, f1])
+                    if args.label_extractor == 'OracleExtractor':
+                        if args.term_classifier == 'OneClassSVM':
+                            writer.writerow([nu, gamma, true_pos, false_pos, precision, recall, f1])
+                        elif args.term_classifier == 'TwoClassSVM':
+                            writer.writerow([gamma, true_pos, false_pos, precision, recall, f1])
+                    else:
+                        if args.term_classifier == 'OneClassSVM':
+                            writer.writerow([window_sz, nu, gamma, true_pos, false_pos, precision, recall, f1])
+                        elif args.term_classifier == 'TwoClassSVM':
+                            writer.writerow([window_sz, gamma, true_pos, false_pos, precision, recall, f1])

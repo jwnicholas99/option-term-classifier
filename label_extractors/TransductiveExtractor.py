@@ -12,7 +12,12 @@ class TransductiveExtractor(LabelExtractor):
 
     def extract_labels(self, state_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
-        Extract labels from a given state trajectory and the idx of the subgoal
+        Extract labels from a given state trajectory and the idx of the subgoal.
+
+        Note that the TransductiveExtractor has 3 classes of labels:
+            1. Positive, in subgoal trajectory (1)
+            2. Negative, in subgoal trajectory (0)
+            3. Negative, all states outside of subgoal trajectory (-1)
 
         Args:
             state_traj (list (list(np.array))): state trajectories
@@ -20,8 +25,8 @@ class TransductiveExtractor(LabelExtractor):
             subgoal_state_idx (int): index of chosen subgoal
 
         Returns:
-            (list(np.array)): list of np.array of positive states
-            (list(np.array)): list of np.array of negative states
+            (list(np.array)): list of np.array of states
+            (list(int)): list of labels of corresponding states
         '''
         subgoal_traj = state_trajs[subgoal_traj_idx]
 
@@ -33,10 +38,17 @@ class TransductiveExtractor(LabelExtractor):
 
         if not self.extract_only_pos:
             subgoal_neg_idxs = [i for i in range(len(subgoal_traj)) if i < pos_start or i > pos_end]
-            non_subgoal_trajs = [state_trajs[i] for i in range(len(state_trajs)) if i != subgoal_state_idx]
+            subgoal_neg_states = [subgoal_traj[i] for i in subgoal_neg_idxs] 
 
-            neg_states = [subgoal_traj[i] for i in subgoal_neg_idxs] + [state for state_traj in state_trajs for state in state_traj]
+            non_subgoal_trajs = [state_trajs[i] for i in range(len(state_trajs)) if i != subgoal_traj_idx]
+            non_subgoal_neg_states = [state for non_subgoal_traj in non_subgoal_trajs for state in non_subgoal_traj]
         else:
-            neg_states = []
+            subgoal_neg_states = []
+            non_subgoal_neg_states = []
 
-        return pos_states, neg_states
+        states = pos_states + subgoal_neg_states + non_subgoal_neg_states
+        labels = [1 for _ in range(len(pos_states))] \
+            + [0 for _ in range(len(subgoal_neg_states))] \
+            + [-1 for _ in range(len(non_subgoal_neg_states))]
+
+        return states, labels

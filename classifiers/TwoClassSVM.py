@@ -18,10 +18,13 @@ class TwoClassSVMClassifier(Classifier):
         '''
         Train classifier using X and Y. 
 
+        Note that there might be more than 2 classes, such as when using the TransductiveExtractor.
+        As the SVC is a multi-class classifier, this will still work.
+
         Args:
             states (list(np.array)): list of np.array
             X (list(np.array or MonteRAMState)): list of states
-            Y (list(bool)): labels for whether state is a positive eg
+            Y (list(int)): class labels for states in X
 
         Returns:
             (list(np.array)): list of np.array of extracted features
@@ -42,7 +45,14 @@ class TwoClassSVMClassifier(Classifier):
 
     def predict(self, state):
         '''
-        Predict whether state is in the term set
+        Predict whether state is in the term set.
+
+        Note that when using the TransductiveExtractor, there are 3 classes: 
+            1. Positive (1)
+            2. Negative, in subgoal traj (0)
+            3. Negative, all states outside subgoal traj (-1)
+        As the positive class still has label 1, predict works when trained with data from the 
+        TransductiveExtractor and other label extractors that only have 2 classes.
 
         Args:
             state (np.array or MonteRAMState): chosen state

@@ -115,14 +115,15 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     trajs_generator = load_trajectories(args.filepath, skip=0)
-    raw_ram_trajs, ram_trajs, frame_trajs = parse_trajectories(trajs_generator, start=500, end=600)
+    train_raw_ram_trajs, train_ram_trajs, train_frame_trajs = parse_trajectories(trajs_generator, start=500, end=550)
+    test_raw_ram_trajs, test_ram_trajs, test_frame_trajs = parse_trajectories(trajs_generator, start=0, end=50)
 
     # (player_x, player_y) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
     #  top of ladder of left plat, key, door]
     subgoals = [(133, 192), (132, 148), (20, 148), (20, 192), (13, 198), (21, 235)]
 
-    # Prepare hyperparams
+    # Prepare hyperparams according to label_extractor and term_classifier
     if args.label_extractor == 'OracleExtractor':
         window_sz_hyperparms = [0]
     else:
@@ -145,12 +146,12 @@ if __name__=='__main__':
                 for subgoal in subgoals:
                     print(f"[+] Running with window_sz={window_sz}, nu={nu}, gamma={gamma} for subgoal={subgoal}")
 
-                    traj_idx, state_idx = find_first_instance(ram_trajs, subgoal)
+                    traj_idx, state_idx = find_first_instance(train_ram_trajs, subgoal)
                     if traj_idx is None:
                         continue
 
-                    subgoal_ram = ram_trajs[traj_idx][state_idx]
-                    ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
+                    subgoal_ram = train_ram_trajs[traj_idx][state_idx]
+                    ground_truth_idxs = filter_in_term_set(test_ram_trajs, subgoal_ram)
 
                     # Set-up feature extractor
                     if args.feature_extractor == 'RawImage':
@@ -175,13 +176,15 @@ if __name__=='__main__':
                         label_extractor = TransductiveExtractor(args.extract_only_pos, window_sz)
 
                     if args.feature_extractor == 'RawImage' or args.feature_extractor == 'DownsampleImage':
-                        subgoal_traj = frame_trajs[traj_idx]
-                        trajs = frame_trajs
+                        subgoal_traj = train_frame_trajs[traj_idx]
+                        train_trajs = train_frame_trajs
+                        test_trajs = test_frame_trajs
                     elif args.feature_extractor == 'RawRAM' or args.feature_extractor == 'MonteRAMState' or args.feature_extractor == 'MonteRAMXY':
-                        subgoal_traj = raw_ram_trajs[traj_idx]
-                        trajs = raw_ram_trajs
+                        subgoal_traj = train_raw_ram_trajs[traj_idx]
+                        train_trajs = train_raw_ram_trajs
+                        test_trajs = test_raw_ram_trajs
 
-                    train_data, labels = label_extractor.extract_labels(trajs, traj_idx, state_idx)
+                    train_data, labels = label_extractor.extract_labels(train_trajs, traj_idx, state_idx)
 
                     # Set-up classifier
                     if args.term_classifier == 'OneClassSVM':
@@ -192,14 +195,14 @@ if __name__=='__main__':
 
                     # Evaluate classifier
                     output = set()
-                    for i, traj in enumerate(trajs):
-                        for j, state in enumerate(traj):
+                    for i, test_traj in enumerate(test_trajs):
+                        for j, state in enumerate(test_traj):
                             if term_classifier.predict(state):
                                 output.add((i, j))
 
-                    # Plot trained classifier
-                    all_states = np.array([state for traj in trajs for state in traj])
-                    ram_xy_states = np.array([parse_ram_xy(state) for traj in raw_ram_trajs for state in traj])
+                    # Plot trained classifier on test set
+                    all_states = np.array([state for test_traj in test_trajs for state in test_traj])
+                    ram_xy_states = np.array([parse_ram_xy(state) for test_traj in test_raw_ram_trajs for state in test_traj])
                     is_xy = args.feature_extractor == 'MonteRAMXY'
 
                     if args.term_classifier == 'OneClassSVM':

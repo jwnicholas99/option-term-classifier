@@ -11,14 +11,12 @@ def plot_SVM(classifier, ram_xy_states, states, is_xy, filepath):
    x_min, x_max = ram_xy_states[:, 0].min() - 5, ram_xy_states[:, 0].max() + 5
    y_min, y_max = ram_xy_states[:, 1].min() - 5, ram_xy_states[:, 1].max() + 5
 
-   x_ = np.linspace(x_min, x_max, 500)
-   y_ = np.linspace(y_min, y_max, 500)
-
-   xx, yy = np.meshgrid(x_, y_)
+   xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2),
+                        np.arange(y_min, y_max, 0.2))
 
    if is_xy:
       # evaluate the decision function on the meshgrid
-      z = classifier.term_classifier.decision_function(np.c_[xx.ravel(), yy.ravel()])
+      z = classifier.term_classifier.predict(np.c_[xx.ravel(), yy.ravel()])
       z = z.reshape(xx.shape)
 
       # plot the decision function

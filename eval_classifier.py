@@ -24,6 +24,7 @@ from label_extractors.labeling_funcs import square_epsilon
 from utils.monte_preprocessing import parse_ram, parse_ram_xy
 from utils.plotting import plot_SVM
 from utils.statistics import calc_statistics
+from utils.save_results import save_results
 
 def load_trajectories(path, skip=0):
     '''
@@ -81,6 +82,7 @@ def find_first_instance(trajs, subgoal):
         for j, state in enumerate (traj):
             if state.player_x == subgoal[0] and state.player_y == subgoal[1]:
                 return i, j
+    return None, None
 
 def filter_in_term_set(trajs, subgoal):
     '''
@@ -119,98 +121,120 @@ if __name__=='__main__':
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
     #  top of ladder of left plat, key, door]
     subgoals = [(133, 192), (132, 148), (20, 148), (20, 192), (13, 198), (21, 235)]
-    subgoal = subgoals[0]
 
-    for window_sz in range(0, 7):
-    #for window_sz in range(0, 1):
-        #for nu in np.arange(0.1, 0.5, 0.1):
-        for nu in np.arange(0.1, 0.2, 0.1):
-            for gamma in [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']:
-                print(f"[+] Running with window_sz={window_sz}, nu={nu}, gamma={gamma}")
+    # Prepare hyperparams
+    if args.label_extractor == 'OracleExtractor':
+        window_sz_hyperparms = [0]
+    else:
+        window_sz_hyperparms = range(0, 7)
 
-                traj_idx, state_idx = find_first_instance(ram_trajs, subgoal)
+    if args.term_classifier == 'OneClassSVM':
+        nu_hyperparams = np.arange(0.1, 0.5, 0.1)
+    else:
+        nu_hyperparams = np.arange(0.1, 0.2, 0.1)
 
-                subgoal_ram = ram_trajs[traj_idx][state_idx]
-                ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
+    gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
 
-                # Set-up feature extractor
-                if args.feature_extractor == 'RawImage':
-                    feature_extractor = RawImage()
-                elif args.feature_extractor == 'DownsampleImage':
-                    feature_extractor = DownsampleImage()
-                elif args.feature_extractor == 'RawRAM':
-                    feature_extractor = RawRAM()
-                elif args.feature_extractor == 'MonteRAMState':
-                    feature_extractor = MonteRAMState()
-                elif args.feature_extractor == 'MonteRAMXY':
-                    feature_extractor = MonteRAMXY()
+    for window_sz in window_sz_hyperparms:
+        for nu in nu_hyperparams:
+            for gamma in gamma_hyperparams:
+                total_true_pos = 0
+                total_false_pos = 0
+                total_ground_truth = 0
 
-                # Extract positive and negative labels
-                if args.label_extractor == 'BeforeAfterExtractor':
-                    label_extractor = BeforeAfterExtractor(args.extract_only_pos, window_sz)
-                elif args.label_extractor == 'AfterExtractor':
-                    label_extractor = AfterExtractor(args.extract_only_pos, window_sz)
-                elif args.label_extractor == 'OracleExtractor':
-                    label_extractor = OracleExtractor(square_epsilon, args.extract_only_pos)
-                elif args.label_extractor == 'TransductiveExtractor':
-                    label_extractor = TransductiveExtractor(args.extract_only_pos, window_sz)
+                for subgoal in subgoals:
+                    print(f"[+] Running with window_sz={window_sz}, nu={nu}, gamma={gamma} for subgoal={subgoal}")
 
-                if args.feature_extractor == 'RawImage' or args.feature_extractor == 'DownsampleImage':
-                    subgoal_traj = frame_trajs[traj_idx]
-                    trajs = frame_trajs
-                elif args.feature_extractor == 'RawRAM' or args.feature_extractor == 'MonteRAMState' or args.feature_extractor == 'MonteRAMXY':
-                    subgoal_traj = raw_ram_trajs[traj_idx]
-                    trajs = raw_ram_trajs
+                    traj_idx, state_idx = find_first_instance(ram_trajs, subgoal)
+                    if traj_idx is None:
+                        continue
 
-                train_data, labels = label_extractor.extract_labels(trajs, traj_idx, state_idx)
+                    subgoal_ram = ram_trajs[traj_idx][state_idx]
+                    ground_truth_idxs = filter_in_term_set(ram_trajs, subgoal_ram)
 
-                # Set-up classifier
-                if args.term_classifier == 'OneClassSVM':
-                    term_classifier = OneClassSVMClassifier(feature_extractor, window_sz=window_sz, nu=nu, gamma=gamma)
-                elif args.term_classifier == 'TwoClassSVM':
-                    term_classifier = TwoClassSVMClassifier(feature_extractor, window_sz=window_sz, gamma=gamma)
-                term_classifier.train(train_data, labels)
+                    # Set-up feature extractor
+                    if args.feature_extractor == 'RawImage':
+                        feature_extractor = RawImage()
+                    elif args.feature_extractor == 'DownsampleImage':
+                        feature_extractor = DownsampleImage()
+                    elif args.feature_extractor == 'RawRAM':
+                        feature_extractor = RawRAM()
+                    elif args.feature_extractor == 'MonteRAMState':
+                        feature_extractor = MonteRAMState()
+                    elif args.feature_extractor == 'MonteRAMXY':
+                        feature_extractor = MonteRAMXY()
 
-                # Evaluate classifier
-                output = set()
-                for i, traj in enumerate(trajs):
-                    for j, state in enumerate(traj):
-                        if term_classifier.predict(state):
-                            output.add((i, j))
+                    # Extract positive and negative labels
+                    if args.label_extractor == 'BeforeAfterExtractor':
+                        label_extractor = BeforeAfterExtractor(args.extract_only_pos, window_sz)
+                    elif args.label_extractor == 'AfterExtractor':
+                        label_extractor = AfterExtractor(args.extract_only_pos, window_sz)
+                    elif args.label_extractor == 'OracleExtractor':
+                        label_extractor = OracleExtractor(square_epsilon, args.extract_only_pos)
+                    elif args.label_extractor == 'TransductiveExtractor':
+                        label_extractor = TransductiveExtractor(args.extract_only_pos, window_sz)
 
-                # Plot trained classifier
-                all_states = np.array([state for traj in trajs for state in traj])
-                ram_xy_states = np.array([parse_ram_xy(state) for traj in raw_ram_trajs for state in traj])
-                is_xy = args.feature_extractor == 'MonteRAMXY'
+                    if args.feature_extractor == 'RawImage' or args.feature_extractor == 'DownsampleImage':
+                        subgoal_traj = frame_trajs[traj_idx]
+                        trajs = frame_trajs
+                    elif args.feature_extractor == 'RawRAM' or args.feature_extractor == 'MonteRAMState' or args.feature_extractor == 'MonteRAMXY':
+                        subgoal_traj = raw_ram_trajs[traj_idx]
+                        trajs = raw_ram_trajs
 
-                if args.term_classifier == 'OneClassSVM':
-                    file_path = f"{args.label_extractor}_plots/all_states_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
-                elif args.term_classifier == 'TwoClassSVM':
-                    file_path = f"{args.label_extractor}_plots/all_states_windowsz={window_sz}_gamma={gamma}.png"
-                plot_SVM(term_classifier, ram_xy_states, all_states, is_xy, file_path)
+                    train_data, labels = label_extractor.extract_labels(trajs, traj_idx, state_idx)
 
-                # Calculate and save statistics
-                ground_truth_idxs_set = set(ground_truth_idxs)
-                true_pos = len(ground_truth_idxs_set.intersection(output))
-                false_pos = len(output) - true_pos
-                precision, recall, f1 = calc_statistics(true_pos, false_pos, len(ground_truth_idxs_set))
-                
-                print(f"Number of states in term set: {len(ground_truth_idxs_set)}")
-                print(f"Number of true positives: {true_pos}")
-                print(f"Number of false positives: {false_pos}")
-                print(f"Precision: {precision}")
-                print(f"Recall: {recall}")
-                print(f"F1: {f1}")
+                    # Set-up classifier
+                    if args.term_classifier == 'OneClassSVM':
+                        term_classifier = OneClassSVMClassifier(feature_extractor, window_sz=window_sz, nu=nu, gamma=gamma)
+                    elif args.term_classifier == 'TwoClassSVM':
+                        term_classifier = TwoClassSVMClassifier(feature_extractor, window_sz=window_sz, gamma=gamma)
+                    term_classifier.train(train_data, labels)
 
-                with open(f"{args.label_extractor}_results.csv", "a") as f:
-                    writer = csv.writer(f)
-                    if args.label_extractor == 'OracleExtractor':
-                        if args.term_classifier == 'OneClassSVM':
-                            writer.writerow([nu, gamma, true_pos, false_pos, precision, recall, f1])
-                        elif args.term_classifier == 'TwoClassSVM':
-                            writer.writerow([gamma, true_pos, false_pos, precision, recall, f1])
-                    else:
-                        if args.term_classifier == 'OneClassSVM':
-                            writer.writerow([window_sz, nu, gamma, true_pos, false_pos, precision, recall, f1])
-                        elif args.term_classifier == 'TwoClassSVM':
-                            writer.writerow([window_sz, gamma, true_pos, false_pos, precision, recall, f1])
+                    # Evaluate classifier
+                    output = set()
+                    for i, traj in enumerate(trajs):
+                        for j, state in enumerate(traj):
+                            if term_classifier.predict(state):
+                                output.add((i, j))
+
+                    # Plot trained classifier
+                    all_states = np.array([state for traj in trajs for state in traj])
+                    ram_xy_states = np.array([parse_ram_xy(state) for traj in raw_ram_trajs for state in traj])
+                    is_xy = args.feature_extractor == 'MonteRAMXY'
+
+                    if args.term_classifier == 'OneClassSVM':
+                        file_path = f"{args.label_extractor}_plots/x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
+                    elif args.term_classifier == 'TwoClassSVM':
+                        file_path = f"{args.label_extractor}_plots/x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
+                    plot_SVM(term_classifier, ram_xy_states, all_states, is_xy, file_path)
+
+                    # Calculate and save statistics
+                    ground_truth_idxs_set = set(ground_truth_idxs)
+                    ground_truth_num = len(ground_truth_idxs_set)
+                    true_pos = len(ground_truth_idxs_set.intersection(output))
+                    false_pos = len(output) - true_pos
+
+                    total_true_pos += true_pos
+                    total_false_pos += false_pos
+                    total_ground_truth += ground_truth_num
+
+                    precision, recall, f1 = calc_statistics(true_pos, false_pos, ground_truth_num)
+                    
+                    print(f"Number of states in term set: {ground_truth_num}")
+                    print(f"Number of true positives: {true_pos}")
+                    print(f"Number of false positives: {false_pos}")
+                    print(f"Precision: {precision}")
+                    print(f"Recall: {recall}")
+                    print(f"F1: {f1}")
+
+                    save_results(args, window_sz, nu, gamma, 
+                                 true_pos, false_pos, ground_truth_num,
+                                 precision, recall, f1,
+                                 f"{subgoal[0]}_{subgoal[1]}_results.csv")
+
+                # Calculate and save overall statistics across subgoals
+                overall_precision, overall_recall, overall_f1 = calc_statistics(total_true_pos, total_false_pos, total_ground_truth)
+                save_results(args, window_sz, nu, gamma, 
+                             total_true_pos, total_false_pos, total_ground_truth,
+                             overall_precision, overall_recall, overall_f1,
+                             f"{args.label_extractor}_overall_results.csv")

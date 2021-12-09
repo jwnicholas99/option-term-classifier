@@ -21,13 +21,11 @@ def plot_SVM(classifier, ram_xy_states, states, is_xy, filepath):
 
       # plot the decision function
       plt.contourf(xx, yy, z, cmap=plt.cm.PuBu)
-      a = plt.contour(xx, yy, z, levels=[0], linewidths=2, colors='darkred')
+      a = plt.contour(xx, yy, z, levels=[0, 1], linewidths=2, colors='darkred')
 
    # plot predictions
-   pos = predicted == 1
-   neg = np.logical_or(predicted == 0, predicted == -1) # TransductiveExtractor has 2 classes for neg
-   c = plt.scatter(ram_xy_states[neg, 0], ram_xy_states[neg, 1], c='gold', edgecolors='k')
-   b = plt.scatter(ram_xy_states[pos, 0], ram_xy_states[pos, 1], c='red', edgecolors='k')
+   c = plt.scatter(ram_xy_states[predicted != 1, 0], ram_xy_states[predicted == 0, 1], c='gold', edgecolors='k')
+   b = plt.scatter(ram_xy_states[predicted == 1, 0], ram_xy_states[predicted == 1, 1], c='red', edgecolors='k')
 
    if is_xy:
       plt.legend([a.collections[0], b, c], ['learned frontier', 'regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))

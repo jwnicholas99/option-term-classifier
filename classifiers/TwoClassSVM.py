@@ -62,3 +62,17 @@ class TwoClassSVMClassifier(Classifier):
         '''
         features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
         return self.term_classifier.predict(features)[0] == 1
+
+    def predict_raw(self, state):
+        '''
+        Predict class label of state. For the TransductiveExtractor, the labels are -1, 0 and 1. 
+        For other label extractors, the labels are 0 and 1.
+
+        Args:
+            state (np.array or MonteRAMState): chosen state
+
+        Returns:
+            (int): predicted class label of state
+        '''
+        features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
+        return self.term_classifier.predict(features)[0]

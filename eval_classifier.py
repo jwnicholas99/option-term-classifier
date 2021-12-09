@@ -107,6 +107,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Evaluate termination classifier performance')
 
     parser.add_argument('filepath', type=str, help='filepath of pkl file containing trajectories with RAM states and frames')
+    parser.add_argument('dest', type=str, help='directory to write results and plots to')
     parser.add_argument('term_classifier', type=str, choices=['OneClassSVM', 'TwoClassSVM'], help='termination classifier to be used')
     parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState', 'MonteRAMXY'], help='feature extractor to be used')
     parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor', 'TransductiveExtractor'], help='label extractor to be used')
@@ -115,8 +116,8 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     trajs_generator = load_trajectories(args.filepath, skip=0)
-    train_raw_ram_trajs, train_ram_trajs, train_frame_trajs = parse_trajectories(trajs_generator, start=500, end=550)
-    test_raw_ram_trajs, test_ram_trajs, test_frame_trajs = parse_trajectories(trajs_generator, start=0, end=50)
+    train_raw_ram_trajs, train_ram_trajs, train_frame_trajs = parse_trajectories(trajs_generator, start=950, end=1150)
+    test_raw_ram_trajs, test_ram_trajs, test_frame_trajs = parse_trajectories(trajs_generator, start=0, end=100)
 
     # (player_x, player_y) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
@@ -136,6 +137,19 @@ if __name__=='__main__':
 
     gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
 
+    subgoals_info = {}
+    for subgoal in subgoals:
+        traj_idx, state_idx = find_first_instance(train_ram_trajs, subgoal)
+        if traj_idx is None:
+            continue
+
+        subgoal_ram = train_ram_trajs[traj_idx][state_idx]
+        ground_truth_idxs = filter_in_term_set(test_ram_trajs, subgoal_ram)
+        subgoals_info[subgoal] = {'traj_idx': traj_idx,
+                                  'state_idx': state_idx,
+                                  'ground_truth_idxs': ground_truth_idxs}
+
+
     for window_sz in window_sz_hyperparms:
         for nu in nu_hyperparams:
             for gamma in gamma_hyperparams:
@@ -146,12 +160,13 @@ if __name__=='__main__':
                 for subgoal in subgoals:
                     print(f"[+] Running with window_sz={window_sz}, nu={nu}, gamma={gamma} for subgoal={subgoal}")
 
-                    traj_idx, state_idx = find_first_instance(train_ram_trajs, subgoal)
-                    if traj_idx is None:
+                    if subgoal not in subgoals_info:
                         continue
 
-                    subgoal_ram = train_ram_trajs[traj_idx][state_idx]
-                    ground_truth_idxs = filter_in_term_set(test_ram_trajs, subgoal_ram)
+                    subgoal_info = subgoals_info[subgoal]
+                    traj_idx = subgoal_info['traj_idx']
+                    state_idx = subgoal_info['state_idx']
+                    ground_truth_idxs = subgoal_info['ground_truth_idxs']
 
                     # Set-up feature extractor
                     if args.feature_extractor == 'RawImage':
@@ -206,9 +221,9 @@ if __name__=='__main__':
                     is_xy = args.feature_extractor == 'MonteRAMXY'
 
                     if args.term_classifier == 'OneClassSVM':
-                        file_path = f"{args.label_extractor}_plots/x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
+                        file_path = f"{args.dest}/plots/x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
                     elif args.term_classifier == 'TwoClassSVM':
-                        file_path = f"{args.label_extractor}_plots/x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
+                        file_path = f"{args.dest}/plots/x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
                     plot_SVM(term_classifier, ram_xy_states, all_states, is_xy, file_path)
 
                     # Calculate and save statistics
@@ -233,11 +248,11 @@ if __name__=='__main__':
                     save_results(args, window_sz, nu, gamma, 
                                  true_pos, false_pos, ground_truth_num,
                                  precision, recall, f1,
-                                 f"{subgoal[0]}_{subgoal[1]}_results.csv")
+                                 f"{args.dest}/{subgoal[0]}_{subgoal[1]}_results.csv")
 
                 # Calculate and save overall statistics across subgoals
                 overall_precision, overall_recall, overall_f1 = calc_statistics(total_true_pos, total_false_pos, total_ground_truth)
                 save_results(args, window_sz, nu, gamma, 
                              total_true_pos, total_false_pos, total_ground_truth,
                              overall_precision, overall_recall, overall_f1,
-                             f"{args.label_extractor}_overall_results.csv")
+                             f"{args.dest}/{args.label_extractor}_overall_results.csv")

@@ -52,3 +52,16 @@ class OneClassSVMClassifier(Classifier):
         '''
         features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
         return self.term_classifier.predict(features)[0] == 1
+
+    def predict_raw(self, state):
+        '''
+        Predict class label of state (either 0 or 1 as OneClassSVM only has 2 classes)
+
+        Args:
+            state (np.array or MonteRAMState): chosen state
+
+        Returns:
+            (int): predicted class label of state
+        '''
+        features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
+        return self.term_classifier.predict(features)[0]

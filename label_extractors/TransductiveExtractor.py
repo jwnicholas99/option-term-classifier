@@ -1,7 +1,7 @@
 from label_extractors.label_extractor import LabelExtractor
 
 class TransductiveExtractor(LabelExtractor):
-    def __init__(self, extract_only_pos=False, window_sz=5):
+    def __init__(self, extract_only_pos=False, window_sz=5, num_trajs=10):
         '''
         Args:
             extract_only_positive (bool): if true, only return positive egs
@@ -9,6 +9,7 @@ class TransductiveExtractor(LabelExtractor):
         '''
         self.extract_only_pos = extract_only_pos
         self.window_sz = window_sz
+        self.num_trajs = num_trajs
 
     def extract_labels(self, state_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
@@ -40,7 +41,8 @@ class TransductiveExtractor(LabelExtractor):
             subgoal_neg_idxs = [i for i in range(len(subgoal_traj)) if i < pos_start or i > pos_end]
             subgoal_neg_states = [subgoal_traj[i] for i in subgoal_neg_idxs] 
 
-            non_subgoal_trajs = [state_trajs[i] for i in range(len(state_trajs)) if i != subgoal_traj_idx]
+            non_subgoal_trajs_start = max(0, subgoal_traj_idx - self.num_trajs)
+            non_subgoal_trajs = [state_trajs[i] for i in range(non_subgoal_trajs_start, subgoal_traj_idx)]
             non_subgoal_neg_states = [state for non_subgoal_traj in non_subgoal_trajs for state in non_subgoal_traj]
         else:
             subgoal_neg_states = []

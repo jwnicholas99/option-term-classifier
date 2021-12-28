@@ -43,7 +43,7 @@ class TwoClassSVMClassifier(Classifier):
     def __construct_feature_matrix(self, states_features):
         return (np.array([np.reshape(state_features, (-1,)) for state_features in states_features]))
 
-    def predict(self, state):
+    def predict(self, states):
         '''
         Predict whether state is in the term set.
 
@@ -55,24 +55,24 @@ class TwoClassSVMClassifier(Classifier):
         TransductiveExtractor and other label extractors that only have 2 classes.
 
         Args:
-            state (np.array or MonteRAMState): chosen state
+            states (list(np.array or MonteRAMState)): list of states to predict on
 
         Returns:
-            (bool): whether state is in the term set
+            (list(bool): whether states are in the term set
         '''
-        features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
-        return self.term_classifier.predict(features)[0] == 1
+        features = np.array(self.feature_extractor.extract_features(states))
+        return self.term_classifier.predict(features) == 1
 
-    def predict_raw(self, state):
+    def predict_raw(self, states):
         '''
-        Predict class label of state. For the TransductiveExtractor, the labels are -1, 0 and 1. 
+        Predict class label of states. For the TransductiveExtractor, the labels are -1, 0 and 1. 
         For other label extractors, the labels are 0 and 1.
 
         Args:
-            state (np.array or MonteRAMState): chosen state
+            states (list(np.array or MonteRAMState)): list of states to predict on
 
         Returns:
-            (int): predicted class label of state
+            (list(int)): predicted class label of states
         '''
-        features = np.reshape(np.array(self.feature_extractor.extract_features([state])), (1, -1))
-        return self.term_classifier.predict(features)[0]
+        features = np.array(self.feature_extractor.extract_features(states))
+        return self.term_classifier.predict(features)

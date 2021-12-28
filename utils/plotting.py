@@ -5,7 +5,7 @@ import csv
 
 def plot_SVM(classifier, ram_xy_states, states, is_xy, filepath):
    # extract the model predictions
-   predicted = np.array([classifier.predict(state) for state in states])
+   predicted = np.array(classifier.predict(states))
 
    # define the meshgrid
    x_min, x_max = ram_xy_states[:, 0].min() - 5, ram_xy_states[:, 0].max() + 5

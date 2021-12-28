@@ -19,7 +19,7 @@ from label_extractors.OracleExtractor import OracleExtractor
 from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
 from label_extractors.AfterExtractor import AfterExtractor
 from label_extractors.TransductiveExtractor import TransductiveExtractor
-from label_extractors.labeling_funcs import square_epsilon
+from label_extractors.labeling_funcs import square_epsilon, square_epsilon_screen
 
 from utils.monte_preprocessing import parse_ram, parse_ram_xy
 from utils.plotting import plot_SVM
@@ -80,7 +80,7 @@ def parse_trajectories(trajs, start, end):
 def find_first_instance(trajs, subgoal):
     for i, traj in enumerate(trajs):
         for j, state in enumerate (traj):
-            if state.player_x == subgoal[0] and state.player_y == subgoal[1]:
+            if state.player_x == subgoal[0] and state.player_y == subgoal[1] and state.screen == subgoal[2]:
                 return i, j
     return None, None
 
@@ -99,7 +99,7 @@ def filter_in_term_set(trajs, subgoal):
     term_set = []
     for i, traj in enumerate(trajs):
         for j, state in enumerate(traj):
-            if square_epsilon(subgoal, state):
+            if square_epsilon_screen(subgoal, state):
                 term_set.append((i, j))
     return term_set
 
@@ -116,13 +116,13 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     trajs_generator = load_trajectories(args.filepath, skip=0)
-    train_raw_ram_trajs, train_ram_trajs, train_frame_trajs = parse_trajectories(trajs_generator, start=950, end=1150)
+    train_raw_ram_trajs, train_ram_trajs, train_frame_trajs = parse_trajectories(trajs_generator, start=0, end=200)
     test_raw_ram_trajs, test_ram_trajs, test_frame_trajs = parse_trajectories(trajs_generator, start=0, end=100)
 
     # (player_x, player_y) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
     #  top of ladder of left plat, key, door]
-    subgoals = [(133, 192), (132, 148), (20, 148), (20, 192), (13, 198), (21, 235)]
+    subgoals = [(133, 192, 1), (132, 148, 1), (20, 148, 1), (20, 192, 1), (13, 198, 1), (21, 235, 1)]
 
     # Prepare hyperparams according to label_extractor and term_classifier
     if args.label_extractor == 'OracleExtractor':
@@ -186,7 +186,7 @@ if __name__=='__main__':
                     elif args.label_extractor == 'AfterExtractor':
                         label_extractor = AfterExtractor(args.extract_only_pos, window_sz)
                     elif args.label_extractor == 'OracleExtractor':
-                        label_extractor = OracleExtractor(square_epsilon, args.extract_only_pos)
+                        label_extractor = OracleExtractor(square_epsilon_screen, args.extract_only_pos)
                     elif args.label_extractor == 'TransductiveExtractor':
                         label_extractor = TransductiveExtractor(args.extract_only_pos, window_sz)
 
@@ -211,9 +211,11 @@ if __name__=='__main__':
                     # Evaluate classifier
                     output = set()
                     for i, test_traj in enumerate(test_trajs):
-                        for j, state in enumerate(test_traj):
-                            if term_classifier.predict(state):
+                        for j, test_state in enumerate(test_traj):
+                            if term_classifier.predict([test_state])[0]:
                                 output.add((i, j))
+
+                    #term_classifier.feature_extractor.visualize_sift_feats(test_trajs[3], f"{args.dest}/sifts/")
 
                     # Plot trained classifier on test set
                     all_states = np.array([state for test_traj in test_trajs for state in test_traj])

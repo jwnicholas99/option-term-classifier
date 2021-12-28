@@ -1,7 +1,8 @@
 import numpy as np
 from collections import namedtuple
 
-MonteRAMState = namedtuple("MonteRAMState", ["player_x", "player_y", "has_key", "door_left_locked", "door_right_locked", "skull_x", "lives"])
+MonteRAMXYScreen = namedtuple("MonteRAMXY", ["player_x", "player_y", "screen"])
+MonteRAMState = namedtuple("MonteRAMState", ["player_x", "player_y", "screen", "has_key", "door_left_locked", "door_right_locked", "skull_x", "lives"])
 
 def get_byte(ram: np.ndarray, address: int) -> int:
     """Return the byte at the specified emulator RAM location"""
@@ -16,6 +17,7 @@ def parse_ram(ram: np.ndarray) -> MonteRAMState:
     """
     x = get_byte(ram, 0xaa)
     y = get_byte(ram, 0xab)
+    screen = get_byte(ram, 0x83)
 
     inventory = get_byte(ram, 0xc1)
     key_mask = 0b00000010
@@ -30,9 +32,21 @@ def parse_ram(ram: np.ndarray) -> MonteRAMState:
     #skull_x = 0
     lives = get_byte(ram, 0xba)
 
-    return MonteRAMState(x, y, has_key, door_left_locked, door_right_locked, skull_x, lives)
+    return MonteRAMState(x, y, screen, has_key, door_left_locked, door_right_locked, skull_x, lives)
 
-def parse_ram_xy(ram: np.ndarray) -> MonteRAMState:
+def parse_ram_xy_screen(ram: np.ndarray):
+    """Get the current annotated Montezuma RAM state as a tuple
+
+    See RAM annotations:
+    https://docs.google.com/spreadsheets/d/1KU4KcPqUuhSZJ1N2IyhPW59yxsc4mI4oSiHDWA3HCK4
+    """
+    x = get_byte(ram, 0xaa)
+    y = get_byte(ram, 0xab)
+    screen = get_byte(ram, 0x83)
+
+    return MonteRAMXYScreen(x, y, screen)
+
+def parse_ram_xy(ram: np.ndarray):
     """Get the current annotated Montezuma RAM state as a tuple
 
     See RAM annotations:

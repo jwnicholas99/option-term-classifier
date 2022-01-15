@@ -10,7 +10,7 @@ class BeforeAfterExtractor(LabelExtractor):
         self.extract_only_pos = extract_only_pos
         self.window_sz = window_sz
 
-    def extract_labels(self, state_trajs, subgoal_traj_idx, subgoal_state_idx):
+    def extract_labels(self, state_trajs, raw_ram_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
         Extract labels from a given state trajectory and the idx of the subgoal.
 
@@ -19,7 +19,8 @@ class BeforeAfterExtractor(LabelExtractor):
             2. Negative, in subgoal trajectory (0)
 
         Args:
-            state_traj (list (list(np.array))): state trajectories
+            state_trajs (list (list(np.array))): state trajectories
+            raw_ram_trajs (list (list(np.array))): state trajectories - RawRAM states
             subgoal_traj_idx (int): index of traj containing the subgoal
             subgoal_state_idx (int): index of chosen subgoal
 

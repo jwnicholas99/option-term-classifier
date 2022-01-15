@@ -11,7 +11,7 @@ class TransductiveExtractor(LabelExtractor):
         self.window_sz = window_sz
         self.num_trajs = num_trajs
 
-    def extract_labels(self, state_trajs, subgoal_traj_idx, subgoal_state_idx):
+    def extract_labels(self, state_trajs, raw_ram_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
         Extract labels from a given state trajectory and the idx of the subgoal.
 
@@ -22,6 +22,7 @@ class TransductiveExtractor(LabelExtractor):
 
         Args:
             state_traj (list (list(np.array))): state trajectories
+            raw_ram_trajs (list (list(np.array))): state trajectories - RawRAM states
             subgoal_traj_idx (int): index of traj containing the subgoal
             subgoal_state_idx (int): index of chosen subgoal
 

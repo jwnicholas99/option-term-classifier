@@ -15,16 +15,17 @@ class OracleExtractor(LabelExtractor):
         self.extract_only_pos = extract_only_pos
         self.labeling_func = labeling_func
 
-    def extract_labels(self, state_trajs, subgoal_traj_idx, subgoal_state_idx):
+    def extract_labels(self, state_trajs, raw_ram_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
-        Extract labels from a given raw ram state trajectory and the idx of the subgoal.
+        Extract labels from a given state trajectory, raw ram state trajectory and the idx of the subgoal.
 
         Note that the OracleExtractor has 2 classes of labels:
             1. Positive, in subgoal trajectory (1)
             2. Negative, in subgoal trajectory (0)
 
         Args:
-            state_traj (list (list(np.array))): state trajectories - must be Raw ram state
+            state_trajs (list (list(np.array))): state trajectories
+            raw_ram_trajs (list (list(np.array))): state trajectories - RawRAM states
             subgoal_traj_idx (int): index of traj containing the subgoal
             subgoal_state_idx (int): index of chosen subgoal
 
@@ -34,13 +35,15 @@ class OracleExtractor(LabelExtractor):
         '''
         pos_states, neg_states = [], []
 
-        subgoal_traj = state_trajs[subgoal_traj_idx]
-        subgoal = parse_ram(subgoal_traj[subgoal_state_idx])
-        for i, state in enumerate(subgoal_traj):
-            if self.labeling_func(subgoal, parse_ram(state)):
-                pos_states.append(state)
+        raw_ram_subgoal_traj = raw_ram_trajs[subgoal_traj_idx]
+        state_subgoal_traj = state_trajs[subgoal_traj_idx]
+
+        subgoal = parse_ram(raw_ram_subgoal_traj[subgoal_state_idx])
+        for i, raw_ram_state in enumerate(raw_ram_subgoal_traj):
+            if self.labeling_func(subgoal, parse_ram(raw_ram_state)):
+                pos_states.append(state_subgoal_traj[i])
             elif not self.extract_only_pos:
-                neg_states.append(state)
+                neg_states.append(state_subgoal_traj[i])
 
         states = pos_states + neg_states
         labels = [1 for _ in range(len(pos_states))] + [0 for _ in range(len(neg_states))]

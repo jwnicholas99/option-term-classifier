@@ -51,7 +51,7 @@ class Data():
             (List of lists of raw RAM, List of lists of MonteRAMState, List of lists of frames)
         '''
         for _ in range(skip):
-            next(self.trajs_generator)
+            next(self.traj_generator)
 
         raw_ram_trajs, ram_trajs, frame_trajs = [], [], []
         for i in range(num_trajs):

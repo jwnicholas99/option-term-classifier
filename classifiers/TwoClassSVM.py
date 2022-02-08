@@ -60,7 +60,8 @@ class TwoClassSVMClassifier(Classifier):
         Returns:
             (list(bool): whether states are in the term set
         '''
-        features = np.array(self.feature_extractor.extract_features(states))
+        states_features = self.feature_extractor.extract_features(states)
+        features = np.array([np.reshape(state_features, (-1,)) for state_features in states_features])
         return self.term_classifier.predict(features) == 1
 
     def predict_raw(self, states):

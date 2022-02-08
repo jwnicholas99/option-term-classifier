@@ -9,6 +9,8 @@ from feature_extractors.RawRAM import RawRAM
 from feature_extractors.MonteRAMState import MonteRAMState
 from feature_extractors.MonteRAMXY import MonteRAMXY
 from feature_extractors.BOVW import BOVW
+from feature_extractors.RND import RND
+from feature_extractors.CNN import CNN
 
 from label_extractors.OracleExtractor import OracleExtractor
 from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
@@ -57,6 +59,8 @@ class Experiment():
             feature_extractor = BOVW(num_clusters=num_clusters, num_sift_keypoints=num_sift_keypoints)
             feature_extractor.train(train_states)
             feature_extractor.visualize_sift_feats([self.train_trajs[0][0]], f"{self.args.dest}/sifts/")
+        elif self.args.feature_extractor == 'CNN':
+            feature_extractor = CNN()
 
         for subgoal in self.subgoals:
             print(f"[+] Subgoal: {subgoal}")
@@ -80,6 +84,8 @@ class Experiment():
                 feature_extractor = MonteRAMState()
             elif self.args.feature_extractor == 'MonteRAMXY':
                 feature_extractor = MonteRAMXY()
+            elif self.args.feature_extractor == 'RND':
+                feature_extractor = RND('MontezumaRevengeNoFrameskip-v4.pred')
 
             # Set-up label extractor
             if self.args.label_extractor == 'BeforeAfterExtractor':
@@ -134,6 +140,7 @@ class Experiment():
             ram_xy_states = np.array([parse_ram_xy(state) for traj in self.train_raw_ram_trajs for state in traj])
             is_xy = self.args.feature_extractor == 'MonteRAMXY'
 
+            '''
             if self.args.term_classifier == 'OneClassSVM':
                 file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
             elif self.args.term_classifier == 'TwoClassSVM':
@@ -149,6 +156,7 @@ class Experiment():
             elif self.args.term_classifier == 'TwoClassSVM':
                 file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
             plot_SVM(classifier, ram_xy_states, all_states, is_xy, file_path)
+            '''
 
         # Calculate and save overall statistics across subgoals
         overall_precision, overall_recall, overall_f1 = calc_statistics(total_true_pos, total_false_pos, total_ground_truth)

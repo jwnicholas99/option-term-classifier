@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.monte_preprocessing import parse_ram_xy
+from utils.monte_preprocessing import parse_ram_xy_screen
 from .feature_extractor import FeatureExtractor
 
 class MonteRAMXY(FeatureExtractor):
@@ -14,4 +14,4 @@ class MonteRAMXY(FeatureExtractor):
         Returns:
             (list(np.array)): list of np.array of extracted features
         '''
-        return [np.asarray(parse_ram_xy(state)) for state in states]
+        return [np.asarray(parse_ram_xy_screen(state)) for state in states]

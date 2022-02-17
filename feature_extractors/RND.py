@@ -32,6 +32,7 @@ class RND(FeatureExtractor):
         for i in range(0, len(states), self.batch_size):
             batch_states = states[i:i+self.batch_size]
             batch_states = np.stack(batch_states, axis=0)
+            batch_states = batch_states.transpose(0, 3, 1, 2)
             self.rnd.predictor(torch.from_numpy(batch_states).float().to("cuda:0"))
 
             batch_output = self.features.cpu().numpy()

@@ -50,7 +50,7 @@ class TwoClassSVMClassifier(Classifier):
         Note that when using the TransductiveExtractor, there are 3 classes: 
             1. Positive (1)
             2. Negative, in subgoal traj (0)
-            3. Negative, all states outside subgoal traj (-1)
+            3. Negative, all states outside subgoal traj (2)
         As the positive class still has label 1, predict works when trained with data from the 
         TransductiveExtractor and other label extractors that only have 2 classes.
 
@@ -66,7 +66,7 @@ class TwoClassSVMClassifier(Classifier):
 
     def predict_raw(self, states):
         '''
-        Predict class label of states. For the TransductiveExtractor, the labels are -1, 0 and 1. 
+        Predict class label of states. For the TransductiveExtractor, the labels are 0, 1 and 2. 
         For other label extractors, the labels are 0 and 1.
 
         Args:

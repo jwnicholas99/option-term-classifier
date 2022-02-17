@@ -1,7 +1,9 @@
 import numpy as np
+import torch
 
 from classifiers.OneClassSVM import OneClassSVMClassifier
 from classifiers.TwoClassSVM import TwoClassSVMClassifier
+from classifiers.FullCNN import FullCNN
 
 from feature_extractors.RawImage import RawImage
 from feature_extractors.DownsampleImage import DownsampleImage
@@ -102,6 +104,9 @@ class Experiment():
                 classifier = OneClassSVMClassifier(feature_extractor, window_sz=window_sz, nu=nu, gamma=gamma)
             elif self.args.term_classifier == 'TwoClassSVM':
                 classifier = TwoClassSVMClassifier(feature_extractor, window_sz=window_sz, gamma=gamma)
+            elif self.args.term_classifier == 'FullCNN':
+                num_classes = 3 if self.args.label_extractor == 'TransductiveExtractor' else 2
+                classifier = FullCNN('cuda:0' if torch.cuda.is_available() else 'cpu', n_classes=num_classes)
             train_data, labels = label_extractor.extract_labels(self.train_trajs, self.train_raw_ram_trajs, traj_idx, state_idx)
             classifier.train(train_data, labels)
 

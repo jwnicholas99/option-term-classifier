@@ -9,7 +9,7 @@ if __name__=='__main__':
 
     parser.add_argument('filepath', type=str, help='filepath of pkl file containing trajectories with RAM states and frames')
     parser.add_argument('dest', type=str, help='directory to write results and plots to')
-    parser.add_argument('term_classifier', type=str, choices=['OneClassSVM', 'TwoClassSVM'], help='termination classifier to be used')
+    parser.add_argument('term_classifier', type=str, choices=['OneClassSVM', 'TwoClassSVM', 'FullCNN'], help='termination classifier to be used')
     parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState', 'MonteRAMXY', 'BOVW', 'RND', 'CNN'], help='feature extractor to be used')
     parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor', 'TransductiveExtractor'], help='label extractor to be used')
     parser.add_argument('--extract_only_pos', default=False, action='store_true', help='whether label extractor should only extract positive egs')
@@ -17,7 +17,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     #data = Data(args.filepath, train_skip=2000, train_num=200, test_skip=0, test_num=100)
-    data = Data(args.filepath, train_skip=0, train_num=200, test_skip=0, test_num=100)
+    data = Data(args.filepath, train_skip=25, train_num=75, test_skip=25, test_num=25)
 
     # (player_x, player_y, screen) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
@@ -43,8 +43,12 @@ if __name__=='__main__':
     else:
         nu_hyperparams = [None]
 
-    #gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
-    gamma_hyperparams = [0.1, 'auto']
+    if args.term_classifier == 'FullCNN':
+        gamma_hyperparams = [None]
+    else:
+        gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
+        #gamma_hyperparams = [0.1, 'auto']
+        #gamma_hyperparams = ['scale']
 
     # Prepare information on each subgoal
     subgoals_info = {}
@@ -65,9 +69,10 @@ if __name__=='__main__':
             for window_sz in window_sz_hyperparms:
                 for nu in nu_hyperparams:
                     for gamma in gamma_hyperparams:
+                        for i in range(1):
                             print(f"[+] clusters={num_clusters}, kps={num_sift_keypoints}, window_sz={window_sz}, nu={nu}, gamma={gamma}")
 
-                            if args.feature_extractor in ['RawImage', 'DownsampleImage', 'BOVW', 'RND', 'CNN']:
+                            if args.feature_extractor in ['RawImage', 'DownsampleImage', 'BOVW', 'RND', 'CNN'] or args.term_classifier == 'FullCNN':
                                 train_trajs = data.train_frame_trajs
                                 test_trajs = data.test_frame_trajs
                             elif args.feature_extractor in ['RawRAM', 'MonteRAMState', 'MonteRAMXY']:

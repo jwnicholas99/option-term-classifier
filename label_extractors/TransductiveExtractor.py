@@ -1,7 +1,7 @@
 from label_extractors.label_extractor import LabelExtractor
 
 class TransductiveExtractor(LabelExtractor):
-    def __init__(self, extract_only_pos=False, window_sz=5, num_trajs=10):
+    def __init__(self, extract_only_pos=False, window_sz=5, num_trajs=2):
         '''
         Args:
             extract_only_positive (bool): if true, only return positive egs

@@ -45,6 +45,7 @@ class Experiment():
         total_true_pos = 0
         total_false_pos = 0
         total_ground_truth = 0
+        f1_scores = []
 
         num_sift_keypoints = self.hyperparams["num_sift_keypoints"]
         num_clusters = self.hyperparams["num_clusters"]
@@ -134,6 +135,7 @@ class Experiment():
             total_ground_truth += ground_truth_num
 
             precision, recall, f1 = calc_statistics(true_pos, false_pos, ground_truth_num)
+            f1_scores.append(f1)
             
             print(f"Number of states in term set: {ground_truth_num}")
             print(f"Number of true positives: {true_pos}")
@@ -170,9 +172,11 @@ class Experiment():
             plot_SVM(classifier, ram_xy_states, all_states, is_xy, file_path)
             '''
 
-        # Calculate and save overall statistics across subgoals
-        overall_precision, overall_recall, overall_f1 = calc_statistics(total_true_pos, total_false_pos, total_ground_truth)
+        # Calculate overall f1 score as a mean of f1 scores across subgoals
+        # Overall precision and overall recall does not make sense here
+        overall_f1 = np.array(f1_scores).mean()
+        print(f"----------Overall F1: {overall_f1}----------")
         save_results_sift(self.args, num_sift_keypoints, num_clusters, window_sz, nu, gamma, 
                           total_true_pos, total_false_pos, total_ground_truth,
-                          overall_precision, overall_recall, overall_f1,
+                          "", "", overall_f1,
                           f"{self.args.dest}/{self.args.label_extractor}_overall_results.csv")

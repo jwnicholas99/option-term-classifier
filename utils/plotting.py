@@ -3,34 +3,57 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import csv
 
-def plot_SVM(classifier, ram_xy_states, states, is_xy, filepath):
+from utils.monte_preprocessing import parse_ram_xy
+
+def plot_SVM(classifier, trajs, raw_ram_trajs, ground_truth_idxs_set, filepath):
    # extract the model predictions
-   predicted = np.array(classifier.predict(states))
+   ground_truth_states = []
+   ground_truth_ram_xy_states = []
+   non_ground_truth_states = []
+   non_ground_truth_ram_xy_states = []
 
-   # define the meshgrid
-   x_min, x_max = ram_xy_states[:, 0].min() - 5, ram_xy_states[:, 0].max() + 5
-   y_min, y_max = ram_xy_states[:, 1].min() - 5, ram_xy_states[:, 1].max() + 5
+   for traj_idx, traj in enumerate(trajs):
+       for state_idx, state in enumerate(traj):
+           if (traj_idx, state_idx) in ground_truth_idxs_set:
+               ground_truth_states.append(state)
+               ground_truth_ram_xy_states.append(parse_ram_xy(raw_ram_trajs[traj_idx][state_idx]))
+           else:
+               non_ground_truth_states.append(state)
+               non_ground_truth_ram_xy_states.append(parse_ram_xy(raw_ram_trajs[traj_idx][state_idx]))
 
-   xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2),
-                        np.arange(y_min, y_max, 0.2))
+   ground_truth_states = np.array(ground_truth_states)
+   ground_truth_ram_xy_states = np.array(ground_truth_ram_xy_states)
+   non_ground_truth_states = np.array(non_ground_truth_states)
+   non_ground_truth_ram_xy_states = np.array(non_ground_truth_ram_xy_states)
 
-   if is_xy:
-      # evaluate the decision function on the meshgrid
-      z = classifier.term_classifier.predict(np.c_[xx.ravel(), yy.ravel()])
-      z = z.reshape(xx.shape)
+   if len(ground_truth_states) == 0 or len(non_ground_truth_states) == 0:
+      print("No ground truth states or non ground truth states to plot")
+      return
 
-      # plot the decision function
-      plt.contourf(xx, yy, z, cmap=plt.cm.PuBu)
-      a = plt.contour(xx, yy, z, levels=[0, 1], linewidths=2, colors='darkred')
+   ground_truth_preds = np.array(classifier.predict(ground_truth_states))
+   non_ground_truth_preds = np.array(classifier.predict(non_ground_truth_states))
 
-   # plot predictions
-   c = plt.scatter(ram_xy_states[predicted != 1, 0], ram_xy_states[predicted == 0, 1], c='gold', edgecolors='k')
-   b = plt.scatter(ram_xy_states[predicted == 1, 0], ram_xy_states[predicted == 1, 1], c='red', edgecolors='k')
+   '''
+   Plot predictions - there are 4 possible types: 
+      1. True Positive: States that are predicted in term set AND is in ground truth set (red +)
+      2. False Positive: States that are predicted in term set AND is not in ground truth set (red o)
+      3. True Negative: States that are predicted not in term set AND is not in ground truth set (gold o)
+      4. False Negative: States that are predicted not in term set AND is in ground truth set (gold +)
+   '''
+   true_pos = plt.scatter(ground_truth_ram_xy_states[ground_truth_preds == 1, 0], 
+                          ground_truth_ram_xy_states[ground_truth_preds == 1, 1],
+                          c='red', edgecolors='k', marker="P")
+   false_pos = plt.scatter(non_ground_truth_ram_xy_states[non_ground_truth_preds == 1, 0], 
+                           non_ground_truth_ram_xy_states[non_ground_truth_preds == 1, 1],
+                           c='red', edgecolors='k')
+   true_neg = plt.scatter(non_ground_truth_ram_xy_states[non_ground_truth_preds != 1, 0], 
+                          non_ground_truth_ram_xy_states[non_ground_truth_preds != 1, 1],
+                          c='gold', edgecolors='k')
+   false_neg = plt.scatter(ground_truth_ram_xy_states[ground_truth_preds != 1, 0], 
+                           ground_truth_ram_xy_states[ground_truth_preds != 1, 1],
+                           c='gold', edgecolors='k', marker="P")
 
-   if is_xy:
-      plt.legend([a.collections[0], b, c], ['learned frontier', 'regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
-   else:
-      plt.legend([b, c], ['regular observations', 'abnormal observations'], bbox_to_anchor=(1.05, 1))
+   plt.legend([true_pos, false_pos, true_neg, false_neg], ['true pos', 'false pos', 'true neg', 'false neg'], bbox_to_anchor=(1.05, 1))
 
    plt.axis('tight')
    plt.savefig(filepath)

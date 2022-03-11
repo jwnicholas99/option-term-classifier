@@ -64,7 +64,7 @@ class TwoClassSVMClassifier(Classifier):
         states_features = self.feature_extractor.extract_features(states)
         features = np.array([np.reshape(state_features, (-1,)) for state_features in states_features])
         predict = self.term_classifier.predict(features)
-        return predict == 1 or predict == 3
+        return [pred == 1 or pred == 3 for pred in predict]
 
     def predict_raw(self, states):
         '''

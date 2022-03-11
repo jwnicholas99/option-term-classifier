@@ -150,27 +150,18 @@ class Experiment():
                               f"{self.args.dest}/{subgoal[0]}_{subgoal[1]}_results.csv")
 
             # Plot trained classifier on train set
-            all_states = np.array([state for traj in self.train_trajs for state in traj])
-            ram_xy_states = np.array([parse_ram_xy(state) for traj in self.train_raw_ram_trajs for state in traj])
-            is_xy = self.args.feature_extractor == 'MonteRAMXY'
-
-            '''
             if self.args.term_classifier == 'OneClassSVM':
                 file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
             elif self.args.term_classifier == 'TwoClassSVM':
                 file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
-            plot_SVM(classifier, ram_xy_states, all_states, is_xy, file_path)
+            plot_SVM(classifier, self.train_trajs, self.train_raw_ram_trajs, ground_truth_idxs_set, file_path)
 
             # Plot trained classifier on test set
-            all_states = np.array([state for traj in self.test_trajs for state in traj])
-            ram_xy_states = np.array([parse_ram_xy(state) for traj in self.test_raw_ram_trajs for state in traj])
-
             if self.args.term_classifier == 'OneClassSVM':
                 file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
             elif self.args.term_classifier == 'TwoClassSVM':
                 file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
-            plot_SVM(classifier, ram_xy_states, all_states, is_xy, file_path)
-            '''
+            plot_SVM(classifier, self.test_trajs, self.test_raw_ram_trajs, ground_truth_idxs_set, file_path)
 
         # Calculate overall f1 score as a mean of f1 scores across subgoals
         # Overall precision and overall recall does not make sense here

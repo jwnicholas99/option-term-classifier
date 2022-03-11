@@ -11,7 +11,7 @@ if __name__=='__main__':
     parser.add_argument('dest', type=str, help='directory to write results and plots to')
     parser.add_argument('term_classifier', type=str, choices=['OneClassSVM', 'TwoClassSVM', 'FullCNN'], help='termination classifier to be used')
     parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState', 'MonteRAMXY', 'BOVW', 'RND', 'CNN'], help='feature extractor to be used')
-    parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor', 'TransductiveExtractor'], help='label extractor to be used')
+    parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor', 'TransductiveExtractor', 'PositiveAugmentExtractor'], help='label extractor to be used')
     parser.add_argument('--extract_only_pos', default=False, action='store_true', help='whether label extractor should only extract positive egs')
 
     args = parser.parse_args()
@@ -30,23 +30,27 @@ if __name__=='__main__':
         window_sz_hyperparms = [None]
     else:
         window_sz_hyperparms = range(0, 7)
+        #window_sz_hyperparms = range(1, 2)
 
     if args.feature_extractor == 'BOVW':
-        num_clusters_hyperparams = range(50, 100, 10)
+        num_clusters_hyperparams = range(110, 121, 10)
         num_sift_keypoints_hyperparams = range(25, 40, 5)
     else:
         num_clusters_hyperparams = [None]
         num_sift_keypoints_hyperparams = [None]
 
     if args.term_classifier == 'OneClassSVM':
-        nu_hyperparams = np.arange(0.1, 0.5, 0.1)
+        nu_hyperparams = np.arange(0.3, 0.5, 0.1)
     else:
         nu_hyperparams = [None]
 
     if args.term_classifier == 'FullCNN':
         gamma_hyperparams = [None]
     else:
-        gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
+        #gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
+        #gamma_hyperparams = [0.001, 0.01, 'auto']
+        gamma_hyperparams = [0.001]
+        #gamma_hyperparams = [0.1]
         #gamma_hyperparams = [0.1, 'auto']
         #gamma_hyperparams = ['scale']
 

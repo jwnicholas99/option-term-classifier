@@ -51,8 +51,9 @@ class TwoClassSVMClassifier(Classifier):
             1. Positive (1)
             2. Negative, in subgoal traj (0)
             3. Negative, all states outside subgoal traj (2)
-        As the positive class still has label 1, predict works when trained with data from the 
-        TransductiveExtractor and other label extractors that only have 2 classes.
+
+        When using the PositiveAugmentExtractor, there is an additional class:
+            4. Positive, states outside subgoal traj that is above cos similarity threshold (3)
 
         Args:
             states (list(np.array or MonteRAMState)): list of states to predict on
@@ -62,7 +63,8 @@ class TwoClassSVMClassifier(Classifier):
         '''
         states_features = self.feature_extractor.extract_features(states)
         features = np.array([np.reshape(state_features, (-1,)) for state_features in states_features])
-        return self.term_classifier.predict(features) == 1
+        predict = self.term_classifier.predict(features)
+        return predict == 1 or predict == 3
 
     def predict_raw(self, states):
         '''

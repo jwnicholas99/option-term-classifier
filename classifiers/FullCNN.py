@@ -115,7 +115,6 @@ class FullCNN(Classifier):
         Train classifier using X and Y. 
 
         Note that there might be more than 2 classes, such as when using the TransductiveExtractor.
-        As the SVC is a multi-class classifier, this will still work.
 
         Args:
             states (list(np.array)): list of np.array
@@ -157,8 +156,9 @@ class FullCNN(Classifier):
             1. Positive (1)
             2. Negative, in subgoal traj (0)
             3. Negative, all states outside subgoal traj (2)
-        As the positive class still has label 1, predict works when trained with data from the 
-        TransductiveExtractor and other label extractors that only have 2 classes.
+
+        When using the PositiveAugmentExtractor, there is an additional class:
+            4. Positive, states outside subgoal traj that is above cos similarity threshold (3)
 
         Args:
             states (list(np.array or MonteRAMState)): list of states to predict on
@@ -170,7 +170,8 @@ class FullCNN(Classifier):
         states = states.permute(0, 3, 1, 2)
         logits = self.model(states)
         probabilities = F.softmax(logits, dim=1)
-        return list(torch.argmax(probabilities, dim=1) == 1)
+        predict = torch.argmax(probabilities, dim=1)
+        return list(torch.logical_or(predict == 1, predict == 3))
 
     @torch.no_grad()
     def predict_raw(self, states):

@@ -18,6 +18,7 @@ from label_extractors.OracleExtractor import OracleExtractor
 from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
 from label_extractors.AfterExtractor import AfterExtractor
 from label_extractors.TransductiveExtractor import TransductiveExtractor
+from label_extractors.PositiveAugmentExtractor import PositiveAugmentExtractor
 from label_extractors.labeling_funcs import square_epsilon, square_epsilon_screen
 
 from utils.statistics import calc_statistics
@@ -98,6 +99,8 @@ class Experiment():
                 label_extractor = OracleExtractor(square_epsilon_screen, self.args.extract_only_pos)
             elif self.args.label_extractor == 'TransductiveExtractor':
                 label_extractor = TransductiveExtractor(self.args.extract_only_pos, window_sz)
+            elif self.args.label_extractor == 'PositiveAugmentExtractor':
+                label_extractor = PositiveAugmentExtractor(feature_extractor, self.args.extract_only_pos, window_sz)
 
             # Set-up classifier
             if self.args.term_classifier == 'OneClassSVM':
@@ -105,7 +108,11 @@ class Experiment():
             elif self.args.term_classifier == 'TwoClassSVM':
                 classifier = TwoClassSVMClassifier(feature_extractor, window_sz=window_sz, gamma=gamma)
             elif self.args.term_classifier == 'FullCNN':
-                num_classes = 3 if self.args.label_extractor == 'TransductiveExtractor' else 2
+                num_classes = 2
+                if self.args.label_extractor == 'TransductiveExtractor':
+                    num_classes = 3
+                elif self.args.label_extractor == 'PositiveAugmentExtractor':
+                    num_classes = 4
                 classifier = FullCNN('cuda:0' if torch.cuda.is_available() else 'cpu', n_classes=num_classes)
             train_data, labels = label_extractor.extract_labels(self.train_trajs, self.train_raw_ram_trajs, traj_idx, state_idx)
             classifier.train(train_data, labels)

@@ -35,23 +35,23 @@ def plot_SVM(classifier, trajs, raw_ram_trajs, ground_truth_idxs_set, filepath):
 
    '''
    Plot predictions - there are 4 possible types: 
-      1. True Positive: States that are predicted in term set AND is in ground truth set (red +)
-      2. False Positive: States that are predicted in term set AND is not in ground truth set (red o)
-      3. True Negative: States that are predicted not in term set AND is not in ground truth set (gold o)
-      4. False Negative: States that are predicted not in term set AND is in ground truth set (gold +)
+      1. True Negative: States that are predicted not in term set AND is not in ground truth set (gold o)
+      2. False Negative: States that are predicted not in term set AND is in ground truth set (gold +)
+      3. True Positive: States that are predicted in term set AND is in ground truth set (red +)
+      4. False Positive: States that are predicted in term set AND is not in ground truth set (red o)
    '''
-   true_pos = plt.scatter(ground_truth_ram_xy_states[ground_truth_preds == 1, 0], 
-                          ground_truth_ram_xy_states[ground_truth_preds == 1, 1],
-                          c='red', edgecolors='k', marker="P")
-   false_pos = plt.scatter(non_ground_truth_ram_xy_states[non_ground_truth_preds == 1, 0], 
-                           non_ground_truth_ram_xy_states[non_ground_truth_preds == 1, 1],
-                           c='red', edgecolors='k')
    true_neg = plt.scatter(non_ground_truth_ram_xy_states[non_ground_truth_preds != 1, 0], 
                           non_ground_truth_ram_xy_states[non_ground_truth_preds != 1, 1],
                           c='gold', edgecolors='k')
    false_neg = plt.scatter(ground_truth_ram_xy_states[ground_truth_preds != 1, 0], 
                            ground_truth_ram_xy_states[ground_truth_preds != 1, 1],
                            c='gold', edgecolors='k', marker="P")
+   true_pos = plt.scatter(ground_truth_ram_xy_states[ground_truth_preds == 1, 0], 
+                          ground_truth_ram_xy_states[ground_truth_preds == 1, 1],
+                          c='red', edgecolors='k', marker="P")
+   false_pos = plt.scatter(non_ground_truth_ram_xy_states[non_ground_truth_preds == 1, 0], 
+                           non_ground_truth_ram_xy_states[non_ground_truth_preds == 1, 1],
+                           c='red', edgecolors='k')
 
    plt.legend([true_pos, false_pos, true_neg, false_neg], ['true pos', 'false pos', 'true neg', 'false neg'], bbox_to_anchor=(1.05, 1))
 

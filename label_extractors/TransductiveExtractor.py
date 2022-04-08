@@ -21,8 +21,8 @@ class TransductiveExtractor(LabelExtractor):
             3. Negative, all states outside of subgoal trajectory (2)
 
         Args:
-            state_traj (list (list(np.array))): state trajectories
-            raw_ram_trajs (list (list(np.array))): state trajectories - RawRAM states
+            state_trajs (list (list(np.array))) or (list (list (list(np.array)))): state trajectories
+            raw_ram_trajs (list (list(np.array))) or (list (list (list(np.array)))): state trajectories - RawRAM states
             subgoal_traj_idx (int): index of traj containing the subgoal
             subgoal_state_idx (int): index of chosen subgoal
 

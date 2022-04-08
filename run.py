@@ -3,6 +3,7 @@ import numpy as np
 
 from Data import Data
 from Experiment import Experiment
+from FrameStackExperiment import FrameStackExperiment
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Evaluate termination classifier performance')
@@ -13,6 +14,7 @@ if __name__=='__main__':
     parser.add_argument('feature_extractor', type=str, choices=['RawImage', 'DownsampleImage', 'RawRAM', 'MonteRAMState', 'MonteRAMXY', 'BOVW', 'RND', 'CNN'], help='feature extractor to be used')
     parser.add_argument('label_extractor', type=str, choices=['BeforeAfterExtractor', 'AfterExtractor', 'OracleExtractor', 'TransductiveExtractor', 'PositiveAugmentExtractor'], help='label extractor to be used')
     parser.add_argument('--extract_only_pos', default=False, action='store_true', help='whether label extractor should only extract positive egs')
+    parser.add_argument('--frame_stack', default=False, action='store_true', help='whether states are frame stacks')
 
     args = parser.parse_args()
 
@@ -29,12 +31,15 @@ if __name__=='__main__':
     if args.label_extractor == 'OracleExtractor':
         window_sz_hyperparms = [None]
     else:
-        window_sz_hyperparms = range(0, 7)
+        #window_sz_hyperparms = range(0, 7)
         #window_sz_hyperparms = range(1, 2)
+        window_sz_hyperparms = range(6, 7)
 
     if args.feature_extractor == 'BOVW':
-        num_clusters_hyperparams = range(110, 121, 10)
-        num_sift_keypoints_hyperparams = range(25, 40, 5)
+        #num_clusters_hyperparams = range(110, 121, 10)
+        #num_sift_keypoints_hyperparams = range(25, 40, 5)
+        num_clusters_hyperparams = range(110, 111, 10)
+        num_sift_keypoints_hyperparams = range(25, 26, 5)
     else:
         num_clusters_hyperparams = [None]
         num_sift_keypoints_hyperparams = [None]
@@ -91,7 +96,13 @@ if __name__=='__main__':
                                 "nu": nu,
                                 "gamma": gamma,
                             }
-                            experiment = Experiment(train_trajs, data.train_raw_ram_trajs, test_trajs, data.test_raw_ram_trajs,
+
+                            if args.frame_stack:
+                                experiment = FrameStackExperiment(train_trajs, data.train_raw_ram_trajs, test_trajs, data.test_raw_ram_trajs,
+                                                    subgoals, subgoals_info, 
+                                                    args, hyperparams)
+                            else:
+                                experiment = Experiment(train_trajs, data.train_raw_ram_trajs, test_trajs, data.test_raw_ram_trajs,
                                                     subgoals, subgoals_info, 
                                                     args, hyperparams)
                             experiment.run()

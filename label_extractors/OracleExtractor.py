@@ -18,6 +18,7 @@ class OracleExtractor(LabelExtractor):
     def extract_labels(self, state_trajs, raw_ram_trajs, subgoal_traj_idx, subgoal_state_idx):
         '''
         Extract labels from a given state trajectory, raw ram state trajectory and the idx of the subgoal.
+        As of now, OracleExtractor only works with single frames as states rather than frame stacks.
 
         Note that the OracleExtractor has 2 classes of labels:
             1. Positive, in subgoal trajectory (1)

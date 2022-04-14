@@ -14,6 +14,7 @@ from feature_extractors.MonteRAMXY import MonteRAMXY
 from feature_extractors.BOVW_stack import BOVW_stack
 from feature_extractors.RND import RND
 from feature_extractors.CNN import CNN
+from feature_extractors.CNN_stack import CNN_stack
 
 from label_extractors.OracleExtractor import OracleExtractor
 from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
@@ -32,9 +33,9 @@ class FrameStackExperiment():
                  subgoals, subgoals_info, 
                  args, hyperparams):
         self.train_trajs = [self.construct_frame_stacks(traj) for traj in train_trajs]
-        self.train_raw_ram_trajs = [self.construct_frame_stacks(traj) for traj in train_raw_ram_trajs]
+        self.train_raw_ram_trajs = train_raw_ram_trajs
         self.test_trajs = [self.construct_frame_stacks(traj) for traj in test_trajs]
-        self.test_raw_ram_trajs = [self.construct_frame_stacks(traj) for traj in test_raw_ram_trajs]
+        self.test_raw_ram_trajs = test_raw_ram_trajs
 
         self.subgoals = subgoals
         self.subgoals_info = subgoals_info
@@ -45,7 +46,7 @@ class FrameStackExperiment():
     def construct_frame_stacks(self, traj):
         frame_stacks = []
         for idx in range(len(traj)):
-            frame_stack = copy.deepcopy([traj[min(0, idx-3)], traj[min(0, idx-2)], traj[min(0, idx-1)], traj[idx]])
+            frame_stack = [traj[min(0, idx-3)], traj[min(0, idx-2)], traj[min(0, idx-1)], traj[idx]]
             frame_stacks.append(frame_stack)
         return frame_stacks
 
@@ -64,15 +65,16 @@ class FrameStackExperiment():
         # Create frame stacker utils
         if self.args.feature_extractor == 'BOVW':
             train_start = 0
-            #train_end = 35
-            train_end = 5
+            train_end = 35
+            #train_end = 5
 
             train_states = [state for traj in self.train_trajs[train_start:train_end] for state in traj]
+            print(len(train_states))
 
             feature_extractor = BOVW_stack(num_clusters=num_clusters, num_sift_keypoints=num_sift_keypoints)
             feature_extractor.train(train_states)
         elif self.args.feature_extractor == 'CNN':
-            feature_extractor = CNN()
+            feature_extractor = CNN_stack()
 
         for subgoal in self.subgoals:
             print(f"[+] Subgoal: {subgoal}")
@@ -128,6 +130,7 @@ class FrameStackExperiment():
 
             # Different tests for frame stacks
             # 1. Every frame stack in the training data should be classified as pos
+            '''
             pos_count = 0
             pos_train_data = [train_data[i] for i in range(len(labels)) if labels[i]]
             for frame_stack in pos_train_data:
@@ -155,3 +158,20 @@ class FrameStackExperiment():
                 if not classifier.predict([modified_stack])[0]:
                     neg_count += 1
             print(neg_count)
+            '''
+
+            # Plot trained classifier on test set
+            ground_truth_idxs_set = set(ground_truth_idxs)
+            if self.args.term_classifier == 'OneClassSVM':
+                file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
+            elif self.args.term_classifier == 'TwoClassSVM':
+                file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
+            plot_SVM(classifier, self.test_trajs, self.test_raw_ram_trajs, ground_truth_idxs_set, file_path)
+
+            ground_truth_idxs_set = set()
+            if self.args.term_classifier == 'OneClassSVM':
+                file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
+            elif self.args.term_classifier == 'TwoClassSVM':
+                file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
+            train_ram, labels = label_extractor.extract_labels(self.train_raw_ram_trajs, self.train_raw_ram_trajs, traj_idx, state_idx)
+            plot_SVM(classifier, train_data, train_ram, ground_truth_idxs_set, file_path)

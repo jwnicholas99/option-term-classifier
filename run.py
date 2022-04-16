@@ -24,16 +24,18 @@ if __name__=='__main__':
     # (player_x, player_y, screen) of good subgoals
     # [right plat, bottom of ladder of right plat, bottom of ladder of left plat,
     #  top of ladder of left plat, key, left door, right door]
-    subgoals = [(133, 192, 1), (132, 148, 1), (20, 148, 1), (20, 192, 1), (13, 198, 1), (24, 235, 1), (130, 235, 1)]
+    #subgoals = [(133, 192, 1), (132, 148, 1), (20, 148, 1), (20, 192, 1), (13, 198, 1), (24, 235, 1), (130, 235, 1)]
     #subgoals = [(24, 235, 1), (130, 235, 1)]
+    #subgoals = [(52, 235, 1)]
+    subgoals = [(133, 148, 1), (58, 192, 1), (35, 235, 1), (119, 235, 1), (49, 235, 1), (88, 192, 1), (142, 192, 1)]
 
     # Prepare hyperparams
     if args.label_extractor == 'OracleExtractor':
         window_sz_hyperparms = [None]
     else:
         #window_sz_hyperparms = range(0, 7)
-        #window_sz_hyperparms = range(1, 2)
-        window_sz_hyperparms = range(6, 7)
+        #window_sz_hyperparms = range(2, 3)
+        window_sz_hyperparms = range(1, 2)
 
     if args.feature_extractor == 'BOVW':
         #num_clusters_hyperparams = range(110, 121, 10)
@@ -54,10 +56,12 @@ if __name__=='__main__':
     else:
         #gamma_hyperparams = [0.0001, 0.001, 0.01, 0.1, 'scale', 'auto']
         #gamma_hyperparams = [0.001, 0.01, 'auto']
-        gamma_hyperparams = [0.001]
+        #gamma_hyperparams = [0.001]
         #gamma_hyperparams = [0.1]
         #gamma_hyperparams = [0.1, 'auto']
         #gamma_hyperparams = ['scale']
+        #gamma_hyperparams = [0.000001]
+        gamma_hyperparams = [0.000000004]
 
     # Prepare information on each subgoal
     subgoals_info = {}

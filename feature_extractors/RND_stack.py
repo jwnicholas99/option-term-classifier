@@ -1,19 +1,17 @@
 import numpy as np
 import torch
-from torchsummary import summary
 
 from rnd.model import RNDModel
 
 from utils.monte_preprocessing import parse_ram
 from .feature_extractor import FeatureExtractor
 
-class RND(FeatureExtractor):
+class RND_stack(FeatureExtractor):
     def __init__(self, predictor_path, batch_size=32):
         self.batch_size = batch_size
         self.rnd = RNDModel((4, 84, 84), 18)
         self.rnd.predictor.load_state_dict(torch.load(predictor_path))
         self.rnd.predictor.cuda()
-        summary(self.rnd.predictor, (1, 84, 84))
 
         def get_features(model, input, output):
             self.features = output.detach()
@@ -34,12 +32,15 @@ class RND(FeatureExtractor):
         '''
         output = []
         for i in range(0, len(states), self.batch_size):
-            batch_states = states[i:i+self.batch_size]
-            batch_states = np.stack(batch_states, axis=0)
-            batch_states = batch_states.transpose(0, 3, 1, 2)
-            batch_output = self.rnd.predictor(torch.from_numpy(batch_states).float().to("cuda:0"))
+            batch_images = states[i:i+self.batch_size]
+            batch_sz = len(batch_images)
+            flattened_images = [frame for frame_stack in batch_images for frame in frame_stack]
+            flattened_images = np.stack(flattened_images, axis=0)
+            flattened_images = flattened_images.transpose(0, 3, 1, 2)
 
-            batch_output = batch_output.cpu().numpy()
-            batch_output = [np.squeeze(x) for x in np.split(batch_output, np.size(batch_output, 0))]
-            output.extend(batch_output)
+            batch_features = self.rnd.predictor(torch.from_numpy(flattened_images).float().to("cuda:0"))
+            batch_features = batch_features.cpu().numpy()
+            batch_features = np.split(batch_features, indices_or_sections=batch_sz)
+
+            output.extend(batch_features)
         return output

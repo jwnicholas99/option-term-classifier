@@ -13,6 +13,7 @@ from feature_extractors.MonteRAMState import MonteRAMState
 from feature_extractors.MonteRAMXY import MonteRAMXY
 from feature_extractors.BOVW_stack import BOVW_stack
 from feature_extractors.RND import RND
+from feature_extractors.RND_stack import RND_stack
 from feature_extractors.CNN import CNN
 from feature_extractors.CNN_stack import CNN_stack
 
@@ -99,7 +100,7 @@ class FrameStackExperiment():
             elif self.args.feature_extractor == 'MonteRAMXY':
                 feature_extractor = MonteRAMXY()
             elif self.args.feature_extractor == 'RND':
-                feature_extractor = RND('MontezumaRevengeNoFrameskip-v4.pred')
+                feature_extractor = RND_stack('MontezumaRevengeNoFrameskip-v4.pred')
 
             # Set-up label extractor
             if self.args.label_extractor == 'BeforeAfterExtractor':
@@ -167,11 +168,3 @@ class FrameStackExperiment():
             elif self.args.term_classifier == 'TwoClassSVM':
                 file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
             plot_SVM(classifier, self.test_trajs, self.test_raw_ram_trajs, ground_truth_idxs_set, file_path)
-
-            ground_truth_idxs_set = set()
-            if self.args.term_classifier == 'OneClassSVM':
-                file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
-            elif self.args.term_classifier == 'TwoClassSVM':
-                file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
-            train_ram, labels = label_extractor.extract_labels(self.train_raw_ram_trajs, self.train_raw_ram_trajs, traj_idx, state_idx)
-            plot_SVM(classifier, train_data, train_ram, ground_truth_idxs_set, file_path)

@@ -57,6 +57,7 @@ class Experiment():
         if self.args.feature_extractor == 'BOVW':
             train_start = 0
             train_end = 35
+            #train_end = 5
 
             train_states = [state for traj in self.train_trajs[train_start:train_end] for state in traj]
 
@@ -154,7 +155,7 @@ class Experiment():
                 file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
             elif self.args.term_classifier == 'TwoClassSVM':
                 file_path = f"{self.args.dest}/plots/train/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
-            plot_SVM(classifier, self.train_trajs, self.train_raw_ram_trajs, ground_truth_idxs_set, file_path)
+            #plot_SVM(classifier, self.train_trajs, self.train_raw_ram_trajs, ground_truth_idxs_set, file_path)
 
             # Plot trained classifier on test set
             if self.args.term_classifier == 'OneClassSVM':

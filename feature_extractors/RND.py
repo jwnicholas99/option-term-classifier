@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from torchsummary import summary
+# from torchsummary import summary
 
 from rnd.model import RNDModel
 

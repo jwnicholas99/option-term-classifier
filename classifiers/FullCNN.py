@@ -71,6 +71,9 @@ class ImageCNN(torch.nn.Module):
         # Add batch and channel dimensions to lone inputs
         if images[0].shape == (84, 84):
             images = images.unsqueeze(0).unsqueeze(0)
+        
+        if images[0].shape == (84, 84, 1):
+            images = images.permute(0, 3, 1, 2)
             
         return self.model(images)
 

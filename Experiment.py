@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from classifiers.EnsembleCNN import EnsembleClassifier
 
 from classifiers.OneClassSVM import OneClassSVMClassifier
 from classifiers.TwoClassSVM import TwoClassSVMClassifier
@@ -19,12 +20,14 @@ from label_extractors.BeforeAfterExtractor import BeforeAfterExtractor
 from label_extractors.AfterExtractor import AfterExtractor
 from label_extractors.TransductiveExtractor import TransductiveExtractor
 from label_extractors.PositiveAugmentExtractor import PositiveAugmentExtractor
+from label_extractors.EnsembleOracleExtractor import EnsembleOracleExtractor
 from label_extractors.labeling_funcs import square_epsilon, square_epsilon_screen
 
 from utils.statistics import calc_statistics
 from utils.save_results import save_results, save_results_sift
 from utils.plotting import plot_SVM
-from utils.monte_preprocessing import parse_ram_xy
+from utils.monte_preprocessing import parse_ram_xy, MonteRAMXYScreen
+
 
 class Experiment():
     def __init__(self, train_trajs, train_raw_ram_trajs, test_trajs, test_raw_ram_trajs,
@@ -103,6 +106,8 @@ class Experiment():
                 label_extractor = TransductiveExtractor(self.args.extract_only_pos, window_sz)
             elif self.args.label_extractor == 'PositiveAugmentExtractor':
                 label_extractor = PositiveAugmentExtractor(feature_extractor, self.args.extract_only_pos, window_sz)
+            elif self.args.label_extractor == 'EnsembleOracleExtractor':
+                label_extractor = EnsembleOracleExtractor(square_epsilon_screen)
 
             # Set-up classifier
             if self.args.term_classifier == 'OneClassSVM':
@@ -116,7 +121,15 @@ class Experiment():
                 elif self.args.label_extractor == 'PositiveAugmentExtractor':
                     num_classes = 4
                 classifier = FullCNN('cuda:0' if torch.cuda.is_available() else 'cpu', n_classes=num_classes)
-            train_data, labels = label_extractor.extract_labels(self.train_trajs, self.train_raw_ram_trajs, traj_idx, state_idx)
+            elif self.args.term_classifier == "EnsembleClassifier":
+                classifier = EnsembleClassifier(5, device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+            
+            if self.args.label_extractor == "EnsembleOracleExtractor":
+                subgoal_info = MonteRAMXYScreen(*subgoal)
+                train_data, labels = label_extractor.extract_labels(self.train_trajs, self.train_raw_ram_trajs, subgoal_info)
+            else:
+                train_data, labels = label_extractor.extract_labels(self.train_trajs, self.train_raw_ram_trajs, traj_idx, state_idx)
+            
             classifier.train(train_data, labels)
 
             output = set()
@@ -162,6 +175,8 @@ class Experiment():
                 file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_nu={nu}_gamma={gamma}.png"
             elif self.args.term_classifier == 'TwoClassSVM':
                 file_path = f"{self.args.dest}/plots/test/sift={num_sift_keypoints}_clusters={num_clusters}_x={subgoal[0]}_y={subgoal[1]}_windowsz={window_sz}_gamma={gamma}.png"
+            elif self.args.term_classifier == 'EnsembleClassifier':
+                file_path = f"{self.args.dest}/plots/test/Ensemble_x={subgoal[0]}_y={subgoal[1]}.png"
             plot_SVM(classifier, self.test_trajs, self.test_raw_ram_trajs, ground_truth_idxs_set, file_path)
 
         # Calculate overall f1 score as a mean of f1 scores across subgoals

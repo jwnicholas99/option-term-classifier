@@ -5,7 +5,7 @@ import csv
 
 from utils.monte_preprocessing import parse_ram_xy
 
-def plot_SVM(classifier, trajs, raw_ram_trajs, ground_truth_idxs_set, filepath):
+def plot_SVM(classifier, trajs, raw_ram_trajs, ground_truth_idxs_set, filepath, mode="labels"):
    # extract the model predictions
    ground_truth_states = []
    ground_truth_ram_xy_states = []
@@ -30,8 +30,9 @@ def plot_SVM(classifier, trajs, raw_ram_trajs, ground_truth_idxs_set, filepath):
       print("No ground truth states or non ground truth states to plot")
       return
 
-   ground_truth_preds = np.array(classifier.predict(ground_truth_states))
-   non_ground_truth_preds = np.array(classifier.predict(non_ground_truth_states))
+   f = classifier.predict if mode == "labels" else classifier.predict_variance
+   ground_truth_preds = np.array(f(ground_truth_states))
+   non_ground_truth_preds = np.array(f(non_ground_truth_states))
 
    '''
    Plot predictions - there are 4 possible types: 
